@@ -1,0 +1,10 @@
+{
+    "payload_init": {
+        "messages": []
+    },
+    "url": "http://127.0.0.1:8989/v1/chat/completions",
+    "headers": {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+}
