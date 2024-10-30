@@ -11,7 +11,6 @@ cd web-llm
 ```
 2. Create a virtual environment: 
 ```bash
-cd web-llm
 python3 -m venv venv
 ```
 3. Install Flask: 
