@@ -1,6 +1,8 @@
 # web-llm
 
 Draft for a web-based LLM chat for developers. Use only with local models; no permissions control.
+// This project uses the jsdiff library, which is licensed under the BSD-3-Clause license.
+// https://github.com/kpdecker/jsdiff
 
 ## To Start
 
@@ -19,11 +21,11 @@ pip install flask
 ```
 4. Start the application: 
 ```bash
-python main.py`
+python3 main.py`
 ```
 5. Start local model
    1. I use llama.cpp server with llama-server -port 8989
-   2. In config/settings.json need to set path to local llm with API like Openai API (example for llama.cpp: http://127.0.0.1:8989/v1/chat/completions) 
+   2. In config/settings.json need to set path to local llm with API like Openai API (example in settings.json for llama.cpp: http://127.0.0.1:8989/v1/chat/completions) 
 
 Open your browser and navigate to [http://127.0.0.1:5001/](http://127.0.0.1:5001/).
 
