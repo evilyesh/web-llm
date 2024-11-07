@@ -20,10 +20,13 @@ class RequestData {
             await this.getFilesContent();
             prompt += this.chat.settings.prefix;
             for (let fileName in this.chat.files_data) {
+//                prompt += '\nThe filename should be written as "' + fileName + ':" with a colon\n';
+                prompt += '\nThe filename should be written with a colon\n';
                 prompt += '\n' + fileName + ':\n\`\`\`\n' + this.chat.files_data[fileName] + '\n\`\`\`\n';
             }
             prompt += this.chat.settings.postfix;
         }
+        prompt += this.chat.prefixInput.value + '\n';
         prompt += this.chat.messageInput.value;
         console.log(prompt);
 

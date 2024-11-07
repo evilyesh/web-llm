@@ -11,7 +11,9 @@ class Chat {
         this.unknown_response = {};
         this.chatContent = getOneSelector('.chat_content');
         this.messageInput = getOneSelector('.chat_message_input');
+        this.prefixInput = getOneSelector('.prefix_text');
         this.pathInput = getOneSelector('.chat_path_input');
+        this.clearInput = getOneSelector('.clear_context');
         this.fileListPopup = getOneSelector('.file_list_popup');
         this.fileListWrapper = getOneSelector('.files_list');
         this.loadingAnimation = getOneSelector('#loading-animation');
@@ -31,8 +33,10 @@ class Chat {
 
     async sendPrompt() {
         try {
-            this.response_data = await this.sendRequest('/sendPrompt', { prompt: await this.requestData.buildPrompt()});
+            console.log(this.clearInput.checked);
+            this.response_data = await this.sendRequest('/sendPrompt', { prompt: await this.requestData.buildPrompt(), clear_input: this.clearInput.checked});
             console.log(this.response_data);
+            this.parsed_data = {};
             this.responseData.parseResponse(this.response_data);
             this.responseData.displayMessage();
             this.messageInput.value = '';
@@ -209,7 +213,8 @@ class Chat {
 
     saveUserMessage(message) {
         const userMessageElement = createEl('div').addClass('user_msg');
-        userMessageElement.textContent = message;
+//        userMessageElement.textContent = message;
+        userMessageElement.innerHTML = '<pre><code>' + message + '</pre></code>';
         this.chatContent.appendChild(userMessageElement);
     }
 

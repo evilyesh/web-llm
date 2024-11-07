@@ -8,7 +8,7 @@ body {
 	font-family: 'Fira Code', monospace;
 	margin: 0;
 	padding: 0;
-	font-size: 16px;
+	font-size: 14px;
 }
 
 a {
@@ -28,6 +28,11 @@ code {
 
 .chat_path{
 	padding:0 20px;
+}
+
+h1, h2, h3 {
+	color: #6272a4;
+	font-family: 'Fira Code', monospace;
 }
 
 input,
@@ -62,9 +67,31 @@ button:active {
 	background: #6272a4;
 }
 
+.p_wr{
+	display:flex;
+	gap:20px;
+	height:100%;
+	min-height:800px;
+}
+
+.p_wr .l_wr{
+	flex: 0 0 calc(10% - 10px);
+}
+
+.p_wr .l_wr h2{
+	padding: 15px;
+}
+
+.p_wr .r_wr{
+	flex: 0 0 calc(90% - 10px);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height:100%;
+}
+
 .chat_container {
-	height: 80vh;
-	overflow-y: scroll;
+	height: 75vh;
 	display: flex;
 	flex-direction: column-reverse;
 }
@@ -72,13 +99,21 @@ button:active {
 .chat_content {
 	flex-grow: 1;
 	padding: 20px;
+	overflow-x: hidden;
 }
 
-.chat_form {
-	display: flex;
-	padding: 20px;
+.chat_content .file_name {
+	color: #4d53e5;
+}
+
+.chat_form{
 	position: relative;
-	height: 10vh;
+}
+
+.chat_form_wr {
+	display: flex;
+	padding: 20px 20px 0 20px;
+	position: relative;
 }
 
 .chat_form input[type="text"],
@@ -87,8 +122,12 @@ button:active {
 	margin-right: 10px;
 }
 
-.chat_form textarea {
-	height: 9vh;
+.chat_form textarea.prefix_text {
+	height: 4vh;
+}
+
+.chat_form textarea.chat_message_input {
+	height: 8vh;
 }
 
 .chat_form button[type="submit"] {
@@ -228,6 +267,7 @@ button:active {
 	display: flex;
 	padding: 0 15px;
 	gap: 5px;
+	flex-wrap: wrap;
 }
 
 .file-label {
@@ -260,7 +300,11 @@ button:active {
 	margin-left: 15px;
 }
 
+.user_msg pre{
+	white-space: break-spaces;
+}
+
 .code_wrap{
-    border-bottom: 1px solid #6272a4;
-    padding: 10px 0;
+	border-bottom: 1px solid #6272a4;
+	padding: 10px 0;
 }

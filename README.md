@@ -1,8 +1,8 @@
 # web-llm
 
 Draft for a web-based LLM chat for developers. Use only with local models; no permissions control.
-// This project uses the jsdiff library, which is licensed under the BSD-3-Clause license.
-// https://github.com/kpdecker/jsdiff
+
+// This project uses the jsdiff library, which is licensed under the BSD-3-Clause license. https://github.com/kpdecker/jsdiff
 
 ## To Start
 
@@ -39,6 +39,8 @@ The response from the model will be displayed in a diff manner.
 
 ## TODO
 
+- [ ] Load file content before send prompt and before diff with model answer. (its differ if user edit file too)
 - [ ] Display the full file path if there are files with the same name in different directories.
 - [ ] Implement permissions control.
 - [ ] Implement config select
+- [ ] Make dataset from history

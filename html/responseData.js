@@ -7,8 +7,10 @@ class ResponseData {
         let messageElement = createEl('div').addClass('one_message');
         let content = this.chat.parsed_response;
         Object.keys(this.chat.parsed_data).forEach(hash => {
+            console.log(this.chat.files_data[this.chat.parsed_data[hash].file]);
+
             const diff = this.renderDiff(replaceFourSpacesWithTab(this.chat.files_data[this.chat.parsed_data[hash].file] || ''), this.chat.parsed_data[hash].data);
-            content = content.replace(hash, '<div class="code_wrap" id="' + hash + '"><pre><code>' + diff.final_html + '</code></pre><button class="confirm" data-id="' + hash + '">Confirm</button><button class="cancel">Cancel</button></div>');
+            content = content.replace(hash, '<div class="file_name">' + this.chat.parsed_data[hash].file + ':\n</div><div class="code_wrap" id="' + hash + '"><pre><code>' + diff.final_html + '</code></pre><button class="confirm" data-id="' + hash + '">Confirm</button><button class="cancel">Cancel</button></div>');
         });
 
         Object.keys(this.chat.unknown_response).forEach(hash => {

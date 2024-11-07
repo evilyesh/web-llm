@@ -28,20 +28,6 @@ class Settings:
         self.intermediate = """ dont miss write file name before code with : and code in ``` with code type.  
                     write whole file content if you edit it. Dont write part of file content!
                     """
-        # self.postfix = """ dont miss write file name before code and code in ``` with code type.
-        #             write only files that you edit, dont send files without changes.
-        #             If you not change method or function or class you can place inside it
-        #             "// ... rest of the code" or
-        #             "## ... rest of the code" or
-        #             "<!-- ... rest of the code-->"
-        #             but save function name and end string!
-        #             This need for search this code.
-        #             Example of function without changes:
-        #             functionName(){
-        #                 //... rest of the code
-        #             }
-        #             this necessary!
-        #             """
         self.files_wrapper = "\nFile content: {}\n```\n{}\n```"
         self.pattern = r".*\s*```([\s\S]+?)```"
 

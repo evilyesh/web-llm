@@ -3,6 +3,7 @@ import os
 import json
 import requests
 from settings import Settings
+import datetime  # Добавляем импорт datetime
 
 settings = Settings(file_path='settings.json')
 
@@ -92,14 +93,19 @@ def send_prompt():
 
         data = request.json
         prompt = data.get('prompt')
+        clear_input = data.get('clear_input')
+        print(clear_input)
 
         if prompt:
             clctx = 'clear your context'
-            if clctx in prompt:
+            if clctx in prompt or clear_input:
                 payload["messages"] = [{"role": "system", "content": clctx}]
 
             payload["messages"].append({"role": "user", "content": prompt.replace(clctx, '')})
             response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+            # print(response)
+            # print(response.text)
 
             if response.status_code == 200:
                 response_data = response.json()
@@ -108,6 +114,16 @@ def send_prompt():
                     model_response = response_data["choices"][0]["message"]["content"]
                     usage = response_data.get("usage", {})
                     total_tokens = usage.get("total_tokens", 0)
+
+                    # Добавляем запись в history.txt
+                    with open('history.txt', 'a') as history_file:
+                        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        history_file.write(f"[{timestamp}]\n")
+                        history_file.write(f"<|---###|>\n")
+                        history_file.write(f"\nUser: <|----####|>{prompt}<|####----|>\n")
+                        history_file.write(f"Model: <|-----#####|>{model_response}<|#####-----|>\n\n")
+                        history_file.write(f"<|###---|>\n")
+
                     return jsonify({"error": "", "data": model_response, "total_tokens": total_tokens}), 200
         else:
             return jsonify({"error": "No prompt provided"}), 400
