@@ -3,6 +3,7 @@
 Draft for a web-based LLM chat for developers. Use only with local models; no permissions control.
 
 // This project uses the jsdiff library, which is licensed under the BSD-3-Clause license. https://github.com/kpdecker/jsdiff
+// This project uses the flask library, which is licensed under the BSD-3-Clause license. https://github.com/pallets/flask.git
 
 ## To Start
 
@@ -21,7 +22,7 @@ pip install flask
 ```
 4. Start the application: 
 ```bash
-python3 main.py`
+python3 main.py
 ```
 5. Start local model
    1. I use llama.cpp server with llama-server -port 8989

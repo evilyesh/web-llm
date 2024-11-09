@@ -74,8 +74,8 @@ class Chat {
             if (this.path !== '') {
                 this.sendRequest('/getFilesList', { path: this.path })
                     .then(result =>{
-                        this.files_names = result;
-                    });
+                    this.files_names = result;
+                });
             } else {
                 this.handleError(lang.pthEmp);
             }
@@ -183,7 +183,6 @@ class Chat {
         this.sendRequest('/saveFileContent', { path: this.path, file_name: file, data: data })
             .then(response => {
                 console.log(response);
-                // Handle the response
             })
             .catch(error => {
                 this.handleError(lang.errFc, error);
@@ -206,15 +205,22 @@ class Chat {
         mi.focus();
     }
 
+    encodeHTML(text) {
+        return text.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     handleError(message, error = null) {
         console.error(message + (error ? error.message : ''));
-        oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error', 3000);
+        oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error_msg', 5000);
     }
 
     saveUserMessage(message) {
         const userMessageElement = createEl('div').addClass('user_msg');
-//        userMessageElement.textContent = message;
-        userMessageElement.innerHTML = '<pre><code>' + message + '</pre></code>';
+        userMessageElement.innerHTML = '<pre><code>' + this.encodeHTML(message) + '</pre></code>';
         this.chatContent.appendChild(userMessageElement);
     }
 

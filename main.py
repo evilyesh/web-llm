@@ -36,7 +36,8 @@ def get_files():
 
             files_list.append({
                 "name": name,
-                "type": file_type
+                "type": file_type,
+                "path": full_path,
             })
 
         return jsonify(files_list), 200

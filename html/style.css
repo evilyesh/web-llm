@@ -308,3 +308,54 @@ button:active {
 	border-bottom: 1px solid #6272a4;
 	padding: 10px 0;
 }
+/**** msg styles ****/
+
+.pb_smmsg_b{
+	position: fixed;
+	right: 0;
+	top:75px;
+	z-index: 1000;
+	max-width: 15%;
+	min-width: 240px;
+}
+
+.pb_smmsg_w{
+	display: block;
+	padding: 25px;
+	background-color: #fffcb8;
+	box-shadow: 0 0 5px 0 #2e343e;
+	border-radius: 10px;
+	-webkit-animation: change_opacity 0.5s linear;
+	-moz-animation: change_opacity 0.5s linear;
+	-ms-animation: change_opacity 0.5s linear;
+	-o-animation: change_opacity 0.5s linear;
+	animation: change_opacity 0.5s linear;
+}
+
+.pb_smmsg_w.success_msg{
+	background-color: #0ac10a;
+	color: #ffffff;
+}
+
+.pb_smmsg_w.error_msg{
+	background-color: #ff0000;
+	color: #ffffff;
+}
+
+.pb_smmsg_w.info_msg{
+	background-color: #ffee86;
+	color: #022146;
+}
+
+.pb_smmsg_w.proc_msg{
+	background-color: #0088cc;
+	color: #ffffff;
+}
+
+.pb_smmsg_w.op_0{
+	opacity: 0;
+}
+
+.pb_smmsg_w img{
+	width: 100%;
+}
