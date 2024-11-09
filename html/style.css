@@ -91,7 +91,7 @@ button:active {
 }
 
 .chat_container {
-	height: 75vh;
+	height: 70vh;
 	display: flex;
 	flex-direction: column-reverse;
 }
@@ -127,7 +127,7 @@ button:active {
 }
 
 .chat_form textarea.chat_message_input {
-	height: 8vh;
+	height: 10vh;
 }
 
 .chat_form button[type="submit"] {

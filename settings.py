@@ -9,9 +9,7 @@ class Settings:
         self.settings = self._read_settings()
         self.prefix = """you are a coder assistant. You assist best in python javascript css html and php. 
                      Instruction for you: 
-                     write file name and after file name code for that file wrapped in ```. 
-                     one file name correspond to that one file code.
-                     edit code for this files.
+                     write file name and after file name code for that file wrapped in ```. one file name correspond to that one file code. edit code for this files.
 
                      example pattern: 
                      filename.txt:
@@ -23,7 +21,7 @@ class Settings:
         self.postfix = """ dont miss write file name before code and code in ``` with code type. 
                     write only files that you edit, dont send files without changes. 
                     write whole file content if you edit it. Dont write part of file content!
-                    Use tab for indents.
+                    Use tab for indents. Think and do step by step.
                     """
         self.intermediate = """ dont miss write file name before code with : and code in ``` with code type.  
                     write whole file content if you edit it. Dont write part of file content!

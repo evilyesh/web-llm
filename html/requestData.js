@@ -21,7 +21,7 @@ class RequestData {
             prompt += this.chat.settings.prefix;
             for (let fileName in this.chat.files_data) {
 //                prompt += '\nThe filename should be written as "' + fileName + ':" with a colon\n';
-                prompt += '\nThe filename should be written with a colon\n';
+//                prompt += '\nThe filename should be written with a colon\n';
                 prompt += '\n' + fileName + ':\n\`\`\`\n' + this.chat.files_data[fileName] + '\n\`\`\`\n';
             }
             prompt += this.chat.settings.postfix;
