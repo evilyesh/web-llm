@@ -5,12 +5,11 @@ class ResponseData {
 
     displayMessage() {
         let messageElement = createEl('div').addClass('one_message');
-        let content = this.chat.parsed_response;
+        let content = nl2br(escapeHtml(this.chat.parsed_response));
         Object.keys(this.chat.parsed_data).forEach(hash => {
-            console.log(this.chat.files_data[this.chat.parsed_data[hash].file]);
 
-            const diff = this.renderDiff(replaceFourSpacesWithTab(this.chat.files_data[this.chat.parsed_data[hash].file] || ''), this.chat.parsed_data[hash].data);
-            content = content.replace(hash, '<div class="file_name">' + this.chat.parsed_data[hash].file + ':\n</div><div class="code_wrap" id="' + hash + '"><pre><code>' + diff.final_html + '</code></pre><button class="confirm" data-id="' + hash + '">Confirm</button><button class="cancel">Cancel</button></div>');
+            const diff = this.renderDiff(replaceFourSpacesWithTab(this.chat.parsed_data[hash].file.content || ''), replaceFourSpacesWithTab(this.chat.parsed_data[hash].file.data));
+            content = content.replace(hash, '<div class="file_name">' + this.chat.parsed_data[hash].file.relative_path + ':\n</div><div class="code_wrap" id="' + hash + '"><pre><code>' + diff.final_html + '</code></pre><button class="confirm" data-id="' + hash + '">Confirm</button><button class="cancel">Cancel</button></div>');
         });
 
         Object.keys(this.chat.unknown_response).forEach(hash => {
@@ -40,14 +39,15 @@ class ResponseData {
             if (typeof data !== 'undefined' && data) {
                 data = replaceFourSpacesWithTab(data);
                 console.log(JSON.stringify(data, null, 2));
-                this.chat.user_files.forEach(file => {
-                    let regex = new RegExp(escapeRegExp(file) + ':([\\s\\S]*?)\\`{3}.*?\\n([\\s\\S]*?)\\`{3}', 'g');
+                Object.values(this.chat.user_files).forEach(file => {
+                    let regex = new RegExp(escapeRegExp(file.relative_path) + pattern, 'g');
                     console.log(regex);
                     let match = regex.exec(data);
                     console.log(match);
                     if (match) {
                         const uuid = '###' + simpleHash(match[2]) + '###';
                         this.chat.parsed_data[uuid] = { file: file, data: match[2] };
+                        file.data = match[2];
                         data = data.replace(match[0], uuid);
                     }
                 });

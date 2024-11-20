@@ -40,10 +40,11 @@ The response from the model will be displayed in a diff manner.
 
 ## TODO
 
-- [ ] fix user prompt insert in html - now <? ?> translates in html as comment
-- [ ] Load file content before send prompt and before diff with model answer. (its differ if user edit file too)
-- [ ] Display the full file path if there are files with the same name in different directories.
+- [x] fix user prompt insert in html - now <? ?> translates in html as comment
+- [x] Load file content before send prompt... 
+- [ ] and before diff with model answer. (its differ if user edit file too)
+- [x] Display the full file path if there are files with the same name in different directories.
 - [ ] Implement permissions control.
 - [ ] Implement config select
-- [ ] Put files drag and drop
-- [ ] Make dataset from history
+- [x] Make dataset draft from history
+- [ ] Put files drag and drop (need electron for this feature, may be in future)

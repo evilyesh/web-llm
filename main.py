@@ -26,18 +26,24 @@ def get_files():
     try:
         data = request.json
         path = data.get('path')
-        if not path:
+        current_path = data.get('current_path')
+        if not path or not current_path:
             return jsonify({"error": "No directory provided"}), 400
 
         files_list = []
-        for name in os.listdir(path):
-            full_path = os.path.join(path, name)
+        for name in os.listdir(current_path):
+            full_path = os.path.join(current_path, name)
             file_type = 'file' if os.path.isfile(full_path) else 'dir'
 
             files_list.append({
                 "name": name,
                 "type": file_type,
                 "path": full_path,
+                "directory": current_path,
+                "project_path": path,
+                "content": '',
+                "data": '',
+                "relative_path": full_path.replace(path, ''),
             })
 
         return jsonify(files_list), 200
@@ -61,12 +67,13 @@ def get_files_content():
         data = request.json
         print(data)
         files = data.get('files')
+        print(files)
         path = data.get('path')
         if files and path:
             files_content = {}
-            for file_path in files:
-                with open(os.path.join(path, file_path), 'r') as file:
-                    files_content[file_path] = file.read()
+            for file in files.values():
+                with open(file.get('path'), 'r') as f:
+                    files_content[file.get('path')] = f.read()
 
             print(files_content)
             return jsonify(files_content), 200
@@ -140,10 +147,11 @@ def save_file():
         data = request.json
         path = data.get('path')
         file_name = data.get('file_name')
+        file_path = data.get('file_path')
         file_content = data.get('data')
 
-        if path and file_name and file_content:
-            with open(os.path.join(path, file_name), 'w') as file:
+        if path and file_name and file_path and file_content:
+            with open(file_path, 'w') as file:
                 file.write(file_content)
 
             return jsonify({"error": "", "msg": f"File {os.path.join(path, file_name)} updated"}), 200

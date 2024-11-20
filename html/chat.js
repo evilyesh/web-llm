@@ -1,9 +1,9 @@
 class Chat {
     constructor() {
-        this.path = '';
-        this.files_names = [];
-        this.files_data = {};
-        this.user_files = [];
+        this.path = ''; //project path
+        this.current_path = ''; //current path
+        this.files_list = [];
+        this.user_files = {};
         this.settings = {};
         this.response_data = '';
         this.parsed_response = '';
@@ -17,6 +17,7 @@ class Chat {
         this.fileListPopup = getOneSelector('.file_list_popup');
         this.fileListWrapper = getOneSelector('.files_list');
         this.loadingAnimation = getOneSelector('#loading-animation');
+        this.current_path_label = getOneSelector('.current_path_text');
         this.selectedFileIndex = -1;
 
         this.requestData = new RequestData(this);
@@ -24,25 +25,16 @@ class Chat {
     }
 
     async getSettings() {
-        try {
-            this.settings = await this.sendRequest('/getSettings');
-        } catch (error) {
-            this.handleError(lang.errGet, error);
-        }
+        this.settings = await this.sendRequest('/getSettings');
     }
 
     async sendPrompt() {
-        try {
-            console.log(this.clearInput.checked);
-            this.response_data = await this.sendRequest('/sendPrompt', { prompt: await this.requestData.buildPrompt(), clear_input: this.clearInput.checked});
-            console.log(this.response_data);
-            this.parsed_data = {};
-            this.responseData.parseResponse(this.response_data);
-            this.responseData.displayMessage();
-            this.messageInput.value = '';
-        } catch (error) {
-            this.handleError(lang.errPrm, error);
-        }
+        this.response_data = await this.sendRequest('/sendPrompt', { prompt: await this.requestData.buildPrompt(), clear_input: this.clearInput.checked});
+        console.log(this.response_data);
+        this.parsed_data = {};
+        this.responseData.parseResponse(this.response_data);
+        this.responseData.displayMessage();
+        this.messageInput.value = '';
     }
 
     async sendRequest(url, data = {}) {
@@ -69,19 +61,19 @@ class Chat {
     }
 
     sendPath() {
-        try {
             this.path = this.pathInput.value.trim();
-            if (this.path !== '') {
-                this.sendRequest('/getFilesList', { path: this.path })
+            if(!this.current_path){
+                this.current_path = this.path;
+                this.showCurrentPath();
+            }
+            if (this.current_path !== '') {
+                this.sendRequest('/getFilesList', { path: this.path, current_path: this.current_path })
                     .then(result =>{
-                    this.files_names = result;
+                    this.files_list = result;
                 });
             } else {
                 this.handleError(lang.pthEmp);
             }
-        } catch (error) {
-            this.handleError(lang.errSend, error);
-        }
     }
 
     showFileListPopup() {
@@ -108,81 +100,92 @@ class Chat {
             this.selectedFileIndex++;
             fileListItems[this.selectedFileIndex].classList.add('selected');
         } else if (event.key === 'Enter') {
-            const selectedFile = this.files_names[this.selectedFileIndex];
-            if (selectedFile.type === 'file') {
-                this.addFileToUserFiles(selectedFile.name);
-                this.replaceCSText(selectedFile.name);
-                this.hideFileListPopup();
-            } else if (selectedFile.type === 'dir') {
-                this.pathInput.value = this.pathInput.value + '/' + selectedFile.name;
-                this.replaceCSText('');
-                this.sendPath();
-            }
+            const selectedFile = this.files_list[this.selectedFileIndex];
+            this.handleFileSelect(selectedFile);
         } else if (event.key === 'Escape') {
             this.hideFileListPopup();
         }
     }
 
+    handleFileSelect(selectedFile){
+        if (selectedFile.type === 'file') {
+            this.addFileToUserFiles(selectedFile);
+            this.replaceCSText(selectedFile.name);
+            this.hideFileListPopup();
+        } else if (selectedFile.type === 'dir') {
+            this.current_path = this.current_path + '/' + selectedFile.name;
+            this.showCurrentPath();
+            this.replaceCSText('');
+            this.sendPath();
+            this.hideFileListPopup();
+        }
+    }
+
+    showCurrentPath(){
+        this.current_path_label.setTEXT(this.current_path);
+    }
+
     populateFileListPopup() {
         const fileList = this.fileListPopup.querySelector('ul');
         fileList.innerHTML = '';
-        this.files_names.forEach((file) => {
+        this.files_list.forEach((file) => {
             const li = createEl('li');
             li.textContent = file.name;
             if (file.type === 'dir') {
                 li.style.fontStyle = 'italic';
             }
             li.addEventListener('click', () => {
-                if (file.type === 'file') {
-                    this.addFileToUserFiles(file.name);
-                    this.replaceCSText(file.name);
-                    this.hideFileListPopup();
-                } else if (file.type === 'dir') {
-                    this.pathInput.value = this.pathInput.value + '/' + file.name;
-                    this.messageInput.value.replace('./', '');
-                    this.sendPath();
-                }
+                this.handleFileSelect(file);
             });
             fileList.appendChild(li);
         });
         this.selectedFileIndex = -1;
     }
 
-    addFileToUserFiles(fileName) {
-        if (!this.user_files.includes(fileName)) {
-            this.user_files.push(fileName);
-            this.createFileLabel(fileName);
-        }
+    addFileToUserFiles(file) {
+        this.user_files[file.path] = file;
+        this.createFileLabel(file);
     }
 
-    removeFileFromUserFiles(fileLabel) {
-        const index = this.user_files.indexOf(fileLabel.getData('id'));
-        console.log(index);
-        if (index > -1) {
-            this.user_files.splice(index, 1);
-            fileLabel.remove();
+    removeFileFromUserFiles(file) {
+        const file_element = getOneSelector('.files_list .file_label[data-id="' + file.path + '"]');
+        const files_dir_wrapper = getOneSelector('.files_list .files_dir[data-dir_path="' + file.relative_path.replace(file.name, '') + '"]');
+        file_element.remove();
+        if(files_dir_wrapper.children.length === 1){
+            files_dir_wrapper.remove();
         }
+        delete this.user_files[file.path];
     }
 
-    createFileLabel(fileName) {
+    createFileLabel(file) {
+        let dir_section = getOneSelector('.files_list .files_dir[data-dir_path="' + file.relative_path.replace(file.name, '') + '"]');
+        console.log(dir_section);
+        if(!dir_section){
+            dir_section = createEl('div').addClass('files_dir').addData('dir_path', file.relative_path.replace(file.name, ''));
+            const dir_section_label = createEl('div').addClass('dir_section_label').setTEXT(file.relative_path.replace(file.name, ''));
+            dir_section.appendChild(dir_section_label);
+            getOneSelector('.files_list').appendChild(dir_section);
+        }
         const fileLabel = createEl('span');
-        fileLabel.setTEXT(fileName).addClass('file-label').addData('id', fileName).addEventListener('click', () => this.removeFileFromUserFiles(fileLabel));
-        this.fileListWrapper.appendChild(fileLabel);
+        fileLabel.setTEXT(file.name).addClass('file_label').addData('id', file.path).addEventListener('click', () => this.removeFileFromUserFiles(file));
+        dir_section.appendChild(fileLabel);
     }
 
     handleConfirmClick(btn) {
+        btn.addClass('active');
         const codeWrap = btn.parentElement;
         const hash = btn.getData('id');
         const file = this.parsed_data[hash].file;
-        const codeBlock = codeWrap.querySelector('code');
+        const codeBlock = codeWrap.getOneSelector('code');
         codeBlock.getManySelector('.removed').forEach(i => {
             i.remove();
         });
         const data = unescapeHtml(codeBlock.textContent);
 
-        this.sendRequest('/saveFileContent', { path: this.path, file_name: file, data: data })
+        this.sendRequest('/saveFileContent', { path: this.path, file_name: file.name, file_path: file.path, data: data })
             .then(response => {
                 console.log(response);
+                codeWrap.getOneSelector('.cancel').remove();
             })
             .catch(error => {
                 this.handleError(lang.errFc, error);
@@ -190,6 +193,7 @@ class Chat {
     }
 
     handleCancelClick(btn) {
+        btn.addClass('active');
         const codeWrap = btn.parentElement;
         const hash = codeWrap.id.substring(1);
 
@@ -205,14 +209,6 @@ class Chat {
         mi.focus();
     }
 
-    encodeHTML(text) {
-        return text.replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
     handleError(message, error = null) {
         console.error(message + (error ? error.message : ''));
         oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error_msg', 5000);
@@ -220,7 +216,7 @@ class Chat {
 
     saveUserMessage(message) {
         const userMessageElement = createEl('div').addClass('user_msg');
-        userMessageElement.innerHTML = '<pre><code>' + this.encodeHTML(message) + '</pre></code>';
+        userMessageElement.innerHTML = nl2br(escapeHtml(message));
         this.chatContent.appendChild(userMessageElement);
     }
 
@@ -228,4 +224,12 @@ class Chat {
         this.loadingAnimation.style.display = isLoading ? 'block' : 'none';
         this.messageInput.disabled = isLoading;
     }
+
+    getParentDirectory(path) {
+        const separator = path.includes('\\') ? '\\' : '/';
+        const parts = path.split(separator);
+        parts.pop();
+        return parts.join(separator);
+    }
+
 }

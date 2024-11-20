@@ -5,8 +5,8 @@ class RequestData {
 
     async getFilesContent() {
         try {
-            this.chat.files_data = await this.chat.sendRequest('/getFilesContent', { files: this.chat.user_files, path: this.chat.path });
-            console.log(this.chat.files_data);
+            const data = await this.chat.sendRequest('/getFilesContent', { files: this.chat.user_files, path: this.chat.path });
+            return data;
         } catch (error) {
             this.chat.handleError('Error occurred while getting files content: ', error);
         }
@@ -14,14 +14,16 @@ class RequestData {
 
     async buildPrompt() {
         let prompt = '';
-        console.log(this.chat.user_files);
-        console.log(this.chat.files_data);
-        if (this.chat.user_files.length) {
-            await this.getFilesContent();
+        if (Object.keys(this.chat.user_files).length) {
+            const files_data = await this.getFilesContent();
+            console.log(this.chat.user_files);
+            console.log(files_data);
+
             prompt += this.chat.settings.prefix;
-            for (let fileName in this.chat.files_data) {
-                prompt += '\n' + fileName + ':\n\`\`\`\n' + this.chat.files_data[fileName] + '\n\`\`\`\n';
-            }
+            Object.keys(files_data).forEach(fileName => {
+                this.chat.user_files[fileName].content = files_data[fileName];
+                prompt += '\n' + this.chat.user_files[fileName].relative_path + ':\n\`\`\`\n' + this.chat.user_files[fileName].content + '\n\`\`\`\n';
+            });
             prompt += this.chat.settings.postfix;
         }
         prompt += this.chat.prefixInput.value + '\n';

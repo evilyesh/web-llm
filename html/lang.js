@@ -10,3 +10,5 @@ const lang = {
     smMsg: 'Error: ',
     userMsg: 'User message'
 };
+
+const pattern = ':([\\s\\S]*?)\\`{3}.*?\\n([\\s\\S]*?)\\`{3}';

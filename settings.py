@@ -10,12 +10,12 @@ class Settings:
         self.prefix = """you are a coder assistant. You assist best in python javascript css html and php. 
                      Instruction for you: 
                      write file name and after file name code for that file wrapped in ```. one file name correspond to that one file code. edit code for this files.
-
                      example pattern: 
-                     filename.txt:
+                     path/to/filename.txt:
                      ```txt
                      hello world
                      ```
+                     Please dont miss path to file.
                      Edit files content in list, lisf of files and files content bellow:
                      """
         self.postfix = """ dont miss write file name before code and code in ``` with code type. 
