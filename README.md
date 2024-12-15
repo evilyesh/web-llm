@@ -45,11 +45,12 @@ The response from the model will be displayed in a diff manner.
 - [x] and before diff with model answer. (its differ if user edit file too)
 - [x] Display the full file path if there are files with the same name in different directories.
 - [ ] Implement permissions control.
-- [ ] Implement config select
+- [x] Implement config select
 - [x] Make dataset draft from history
 - [ ] Put files drag and drop (need electron for this feature, may be in future)
+- [x] make improve prompt button
 
 
-- [ ] Fix files list popup.
-- [ ] Make settings popup.
+- [x] Fix files list popup.
+- [x] Make settings popup.
 - [ ] make sql query to database.
