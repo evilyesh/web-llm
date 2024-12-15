@@ -3,9 +3,11 @@ import os
 import json
 import requests
 from settings import Settings
-import datetime  # Добавляем импорт datetime
+import datetime
+import psycopg2
 
 settings = Settings(file_path='settings.json')
+selected_settings = None  # Variable to store the selected settings
 
 app = Flask(__name__)
 debug = False
@@ -21,11 +23,17 @@ def static_files(filename):
     return send_from_directory('html', filename)
 
 
+@app.route('/html.v2/<path:filename>')
+def static_files_v2(filename):
+    return send_from_directory('html.v2', filename)
+
+
 @app.route('/getFilesList', methods=['POST'])
 def get_files():
     try:
         data = request.json
-        path = data.get('path')
+        print(data)
+        path = data.get('path') or data.get('project_path')
         current_path = data.get('current_path')
         if not path or not current_path:
             return jsonify({"error": "No directory provided"}), 400
@@ -46,6 +54,9 @@ def get_files():
                 "relative_path": full_path.replace(path, ''),
             })
 
+        # Sort files_list by 'type' (directories first) and then by 'name'
+        files_list.sort(key=lambda x: (x['type'] == 'file', x['name']))
+
         return jsonify(files_list), 200
 
     except json.JSONDecodeError:
@@ -56,9 +67,7 @@ def get_files():
 
 @app.route('/getSettings', methods=['POST'])
 def get_settings():
-    prefix = settings.get_prefix()
-    postfix = settings.get_postfix()
-    return jsonify({"prefix": prefix, "postfix": postfix}), 200
+    return jsonify({"prefix": settings.get_prefix(), "postfix": settings.get_postfix(), "prefix_diff": settings.get_prefix_diff(), "postfix_diff": settings.get_postfix_diff(), "prompt_prefix": settings.get_prompt_prefix()}), 200
 
 
 @app.route('/getFilesContent', methods=['POST'])
@@ -67,7 +76,6 @@ def get_files_content():
         data = request.json
         print(data)
         files = data.get('files')
-        print(files)
         path = data.get('path')
         if files and path:
             files_content = {}
@@ -75,14 +83,12 @@ def get_files_content():
                 with open(file.get('path'), 'r') as f:
                     files_content[file.get('path')] = f.read()
 
-            print(files_content)
             return jsonify(files_content), 200
         else:
             return jsonify({"error": "No files provided"}), 400
     except json.JSONDecodeError:
         return jsonify({"error": "Invalid JSON"}), 400
     except Exception as e:
-        print(str(e))
         return jsonify({"error": str(e)}), 500
 
 
@@ -96,24 +102,26 @@ def send_prompt():
         if debug:
             total_tokens = 0
             return jsonify({"error": "",
-                            "data": "I'd be happy to help you with that. To avoid using the `onclick` attribute, you can use JavaScript to add event listeners to your buttons instead. Here's how you can modify your `displayMessage` method to add click event listeners to the \"Confirm\" and \"Cancel\" buttons chat.js:\n\n```javascript\ndisplayMessage() {\n    let messageElement = document.createElement('div');\n    let content = this.parsed_response;\n    Object.keys(this.parsed_data).forEach(hash => {\n        const oldContent = this.files_data[this.parsed_data[hash].file] || '';\n        const newContent = this.parsed_data[hash].data;\n        const diff = this.renderDiff(oldContent, newContent);\n        content = content.replace(hash, `<div class=\"code_wrap\" id=\"d${hash}\"><pre><code>${diff.final_html}</pre></code><button class=\"confirm-btn\">Confirm</button><button class=\"cancel-btn\">Cancel</button></div>`);\n    });\n\n    // ... rest of the code\n\n    messageElement.innerHTML = content;\n    this.chatContent.appendChild(messageElement);\n\n    messageElement.getManySelector('.removed').forEach(i =>{\n        i.removeClass('removed');\n    });\n    messageElement.getManySelector('.added').forEach(i =>{\n        i.removeClass('added');\n    });\n\n    // Add event listeners to the buttons\n    messageElement.getManySelector('.confirm-btn').forEach(btn => {\n        btn.addEventListener('click', () => this.handleConfirmClick(btn));\n    });\n    messageElement.getManySelector('.cancel-btn').forEach(btn => {\n        btn.addEventListener('click', () => this.handleCancelClick(btn));\n    });\n\n    console.log({content});\n}\n```\n\nYou can then add the `handleConfirmClick` and `handleCancelClick` methods to your `Chat` class to handle the button clicks:\n\n```javascript\nhandleConfirmClick(btn) {\n    const codeWrap = btn.parentElement;\n    const hash = codeWrap.id.substring(1);\n    const file = this.parsed_data[hash].file;\n    const data = codeWrap.querySelector('code').textContent;\n\n    // Send the data to the server\n    this.sendRequest('/saveFileContent', {file, data})\n        .then(response => {\n            console.log(response);\n            // Handle the response\n        })\n        .catch(error => {\n            console.error(error);\n            // Handle the error\n        });\n}\n\nhandleCancelClick(btn) {\n    const codeWrap = btn.parentElement;\n    const hash = codeWrap.id.substring(1);\n\n    // Remove the code wrap from the view\n    codeWrap.remove();\n\n    // Remove the data from parsed_data\n    delete this.parsed_data[hash];\n}\n```",
+                            "data": settings.get('sample'),
                             "total_tokens": total_tokens}), 200
 
         data = request.json
         prompt = data.get('prompt')
         clear_input = data.get('clear_input')
-        print(clear_input)
+        use_diff = data.get('use_diff')
 
         if prompt:
-            clctx = 'clear your context'
-            if clctx in prompt or clear_input:
-                payload["messages"] = [{"role": "system", "content": clctx}]
+            if clear_input or prompt.startswith("/clear") or not payload["messages"]:
+                print('clear chat')
+                if use_diff:
+                    payload["messages"] = [{"role": "system", "content": settings.get_system_diff()}]
+                else:
+                    payload["messages"] = [{"role": "system", "content": settings.get_system()}]
 
-            payload["messages"].append({"role": "user", "content": prompt.replace(clctx, '')})
+            payload["messages"].append({"role": "user", "content": prompt})
+            print(json.dumps(payload, indent=4))
+
             response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-            # print(response)
-            # print(response.text)
 
             if response.status_code == 200:
                 response_data = response.json()
@@ -123,16 +131,50 @@ def send_prompt():
                     usage = response_data.get("usage", {})
                     total_tokens = usage.get("total_tokens", 0)
 
-                    # Добавляем запись в history.txt
-                    with open('history.txt', 'a') as history_file:
-                        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        history_file.write(f"[{timestamp}]\n")
+                    with open('history/history.txt', 'a') as history_file:
+                        history_file.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]\n")
                         history_file.write(f"<|---###|>\n")
                         history_file.write(f"\nUser: <|----####|>{prompt}<|####----|>\n")
                         history_file.write(f"Model: <|-----#####|>{model_response}<|#####-----|>\n\n")
                         history_file.write(f"<|###---|>\n")
 
                     return jsonify({"error": "", "data": model_response, "total_tokens": total_tokens}), 200
+        else:
+            return jsonify({"error": "No prompt provided"}), 400
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON"}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/sendEditPrompt', methods=['POST'])
+def send_edit_prompt():
+    url = settings.get("url")
+    headers = settings.get("headers")
+    payload = settings.get("payload_init")
+
+    try:
+        data = request.json
+        prompt = data.get('prompt')
+        clear_input = data.get('clear_input')
+
+        if prompt:
+            if clear_input:
+                payload["messages"] = [{"role": "system", "content": "You assist improve prompt for llm."}]
+            payload["messages"].append({"role": "user", "content": f"You assist improve prompt for llm. This is text prompt for coder LLM, improve prompt: \n{prompt}"})
+            print(json.dumps(payload, indent=4))
+
+            response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+            if response.status_code == 200:
+                response_data = response.json()
+                print(json.dumps(response_data, indent=4))
+                if 'choices' in response_data:
+                    model_response = response_data["choices"][0]["message"]["content"]
+                    payload["messages"] = []
+                    return jsonify({"error": "", "data": model_response}), 200
         else:
             return jsonify({"error": "No prompt provided"}), 400
     except json.JSONDecodeError:
@@ -177,6 +219,73 @@ def save_settings():
             return jsonify({"error": "", "msg": f"Settings updated"}), 200
         else:
             return jsonify({"error": f"Settings were not updated."})
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+
+@app.route('/runSQLQuery', methods=['POST'])
+def run_sql_query():
+    try:
+        data = request.json
+        host = data.get('host')
+        port = data.get('port')
+        username = data.get('username')
+        password = data.get('password')
+        query = data.get('query')
+
+        if not host or not port or not username or not password or not query:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            user=username,
+            password=password
+        )
+        cursor = conn.cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"error": "", "results": results}), 200
+
+    except psycopg2.Error as e:
+        return jsonify({"error": str(e)}), 500
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+
+@app.route('/getSettingsList', methods=['GET'])
+def get_settings_list():
+    try:
+        config_dir = 'config/'
+        config_files = [f for f in os.listdir(config_dir) if f.endswith('.json')]
+        settings_list = []
+
+        for config_file in config_files:
+            file_path = os.path.join(config_dir, config_file)
+            with open(file_path, 'r') as file:
+                settings_data = json.load(file)
+                settings_list.append({
+                    "file_name": config_file,
+                    "settings": settings_data
+                })
+
+        return jsonify(settings_list), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/setSelectedSettings', methods=['POST'])
+def set_selected_settings():
+    global selected_settings
+    try:
+        data = request.json
+        selected_settings = data.get('selectedSettings')
+        settings.loadSettings(selected_settings)
+        return jsonify({"error": "", "msg": f"Selected settings set to {selected_settings}"}), 200
     except json.JSONDecodeError:
         return jsonify({"error": "Invalid JSON"}), 400
 

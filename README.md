@@ -2,8 +2,8 @@
 
 Draft for a web-based LLM chat for developers. Use only with local models; no permissions control.
 
-// This project uses the jsdiff library, which is licensed under the BSD-3-Clause license. https://github.com/kpdecker/jsdiff
-// This project uses the flask library, which is licensed under the BSD-3-Clause license. https://github.com/pallets/flask.git
+- This project uses the jsdiff library, which is licensed under the BSD-3-Clause license. https://github.com/kpdecker/jsdiff
+- This project uses the flask library, which is licensed under the BSD-3-Clause license. https://github.com/pallets/flask.git
 
 ## To Start
 
@@ -42,9 +42,14 @@ The response from the model will be displayed in a diff manner.
 
 - [x] fix user prompt insert in html - now <? ?> translates in html as comment
 - [x] Load file content before send prompt... 
-- [ ] and before diff with model answer. (its differ if user edit file too)
+- [x] and before diff with model answer. (its differ if user edit file too)
 - [x] Display the full file path if there are files with the same name in different directories.
 - [ ] Implement permissions control.
 - [ ] Implement config select
 - [x] Make dataset draft from history
 - [ ] Put files drag and drop (need electron for this feature, may be in future)
+
+
+- [ ] Fix files list popup.
+- [ ] Make settings popup.
+- [ ] make sql query to database.

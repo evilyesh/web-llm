@@ -3,8 +3,6 @@ const oPb = {
         if (document.readyState !== 'loading') cb();
         else document.addEventListener('DOMContentLoaded', cb);
     },
-    getById(s) { return document.getElementById(s); },
-    getByClass(s) { return document.getElementsByClassName(s); },
     lazyResize(cb) {
         let t = 0;
         window.addEventListener('resize', () => {
@@ -60,6 +58,7 @@ if (!Element.prototype.remove) {
 
 Element.prototype.setTEXT = function(v) { this.textContent = v; return this; };
 Element.prototype.setHTML = function(v) { this.innerHTML = v; return this; };
+Element.prototype.setId = function(v) { this.id = v; return this; };
 
 Element.prototype.addData = function(n, v) { this.dataset[n] = v; return this; };
 Element.prototype.getData = function(n) { return this.dataset[n]; };
@@ -83,8 +82,7 @@ Element.prototype.appendTo = function(e) { e.append(this); return this; };
 function getOneSelector(s) { return document.querySelector(s); }
 function getManySelector(s) { return document.querySelectorAll(s); }
 function createEl(t) { return document.createElement(t); }
-function getElById(id) { return document.getElementById(id); }
-function appendTo(e) { return document.append(e); }
+function getById(id) { return document.getElementById(id); }
 
 function escapeHtml(unsafe) {
     return unsafe
@@ -125,9 +123,19 @@ function replaceFourSpacesWithTab(text) {
     return text.replace(pattern, '\t');
 }
 
+function replaceTabWithFourSpaces(text) {
+    return text.replace('\t', '    ');
+}
+
 function nl2br(str) {
   if (typeof str === 'undefined' || str === null) {
     return '';
   }
   return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
 }
+
+function createShortString(longString) {
+    if (longString.length <= 20) return longString;
+    return '...' + longString.substring(longString.length - 20);
+}
+

@@ -1,4 +1,5 @@
 const lang = {
+    wrap: '\n\`\`\`\n',
     errGet: 'Error occurred while getting settings: ',
     errSend: 'Error occurred while sending path: ',
     pthEmp: 'Path is empty',
@@ -8,7 +9,10 @@ const lang = {
     errFc: 'Error occurred while saving file content: ',
     errMsg: 'Error: ',
     smMsg: 'Error: ',
-    userMsg: 'User message'
+    userMsg: 'User message',
+    forModelFileIns: 'you write file name without colon or ###, please follow instruction of code formating',
+    noTextSelected: 'No text for send... inter prompt.',
+    modelFormatFollow: 'please repeat with files names formated how i ask in instruction'
 };
 
-const pattern = ':([\\s\\S]*?)\\`{3}.*?\\n([\\s\\S]*?)\\`{3}';
+const pattern = '([\\s\\S]*?)\\`{3}.*?\\n([\\s\\S]*?)\\`{3}';

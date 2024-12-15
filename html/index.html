@@ -1,15 +1,19 @@
 <html>
 <head>
-	<meta charset="UTF-8">
+    <meta charset="UTF-8">
 	<title>Title</title>
 	<link rel="stylesheet" href="/html/style.css">
 
 	<script src="/html/lib/diff.js"></script>
 	<script src="/html/fn.js"></script>
 	<script src="/html/lang.js"></script>
-	<script src="/html/requestData.js"></script>
-	<script src="/html/responseData.js"></script>
-	<script src="/html/chat.js"></script>
+	<script src="/html/cRequest.js"></script>
+	<script src="/html/cRequestData.js"></script>
+	<script src="/html/cResponseData.js"></script>
+	<script src="/html/cSettings.js"></script>
+	<script src="/html/cFilesList.js"></script>
+	<script src="/html/cMessage.js"></script>
+	<script src="/html/cChatList.js"></script>
 	<script src="/html/script.js"></script>
 </head>
 <body>
@@ -24,7 +28,6 @@
 
 	</div>
 	<div class="r_wr">
-
 		<div class="chat_container">
 			<div class="chat_content">
 				<!-- Chat content goes here -->
@@ -32,21 +35,10 @@
 		</div>
 
 		<div class="form_wrapper">
-			<div class="chat_path">
-				<input type="text" class="chat_path_input" placeholder="Enter project path here...">
-				<div class="current_path">Current path: <span class="current_path_text"></span></div>
-			</div>
 			<form class="chat_form">
+				<div class="current_path">Current path: <span class="current_path_text"></span></div>
 				<div class="chat_form_wr">
-					<textarea type="text" class="prefix_text" placeholder="Permanent prefix text"></textarea>
-					<div>
-						<input type="checkbox" id="clear_context" class="clear_context">
-						<label for="clear_context">Clear context</label>
-					</div>
-				</div>
-
-				<div class="chat_form_wr">
-					<textarea type="text" class="chat_message_input" placeholder="Enter your message here..."></textarea>
+					<textarea class="chat_message_input" placeholder="Enter your message here..."></textarea>
 					<button class="submit_btn" type="submit">Send</button>
 				</div>
 				<div class="file_list_popup">
@@ -62,6 +54,89 @@
 
 <div id="loading-animation">
 	<div class="spinner"></div>
+</div>
+
+<span class="settings_button">⚙️</span>
+<span class="edit_button">✍️</span>
+
+<div id="settings_popup" class="settings_popup">
+	<div class="settings_popup_content">
+		<div class="header">
+			<h3>Settings</h3><span class="close_button">&times;</span>
+		</div>
+		<div class="chat_path">
+			<label>
+				Project Path:
+				<input type="text" class="chat_path_input" placeholder="Enter project path here...">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Clear context</div>
+				<input type="checkbox" class="clear_context">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Use diff</div>
+				<input type="checkbox" class="use_diff">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Auto answer on wrong format</div>
+				<input type="checkbox" class="auto_answer">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Permanent prefix text:</div>
+				<textarea class="prefix_text" placeholder="Permanent prefix text"></textarea>
+			</label>
+		</div>
+		<h3>SQL Query Settings</h3>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Host:</div>
+				<input type="text" class="sql_host" placeholder="Enter host...">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Port:</div>
+				<input type="text" class="sql_port" placeholder="Enter port...">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Username:</div>
+				<input type="text" class="sql_username" placeholder="Enter username...">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Password:</div>
+				<input type="password" class="sql_password" placeholder="Enter password...">
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">SQL Query:</div>
+				<textarea class="sql_query" placeholder="Enter SQL query..."></textarea>
+			</label>
+		</div>
+		<div class="settings_form_wr">
+			<button class="submit_sql_btn" type="button">Send SQL Query</button>
+		</div>
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Select Configuration:</div>
+				<select class="settings_select">
+					<!-- Configuration options will be populated here -->
+				</select>
+			</label>
+		</div>
+	</div>
 </div>
 
 </body>
