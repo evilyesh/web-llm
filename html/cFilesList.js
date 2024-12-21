@@ -3,20 +3,20 @@
  * Handles file selection, directory navigation, and file list display.
  */
 class FilesList {
-    // Constructor to initialize the list of files
-	constructor() {
+	// Constructor to initialize the list of files
+	constructor(chat) {
+		this.chat = chat;
 		this.projectPath = null;
 		this._currentPath = null;
 		this.list = {};
 		this.userFiles = {};
-		this.cRequest = new CRequest();
-		this.fileListPopup = document.querySelector('.file_list_popup');
+		this.cRequest = this.chat.cRequest;
+		this.fileListPopup = getOneSelector('.file_list_popup');
 		this.fileListPopup._showed = false;
 		this.selectedFileIndex = -1;
-		this.chatPathInput = document.querySelector('.chat_path_input');
 		this.currentPathLabel = getOneSelector('.current_path_text');
-		this.chatMessageInput = document.querySelector('.chat_message_input');
-		this.pWr = document.querySelector('.p_wr');
+		this.chatMessageInput = getOneSelector('.chat_message_input');
+		this.pWr = getOneSelector('.p_wr');
 
 		this.pWr.addEventListener('keydown', e => {
 			this.handleFileListPopupKeydown(e);
@@ -39,6 +39,15 @@ class FilesList {
 		console.log(path);
 		this.projectPath = path;
 		this.currentPath = path; // Initialize current path to project path
+		this.chat.resetChatData(); // Reset chat data when project path changes
+		this.clearFilesList(); // Clear the files list
+		// this.getFilesList(); // Refresh the file list
+	}
+
+	// Method to clear the files list
+	clearFilesList() {
+		this.userFiles = {}; // Clear the userFiles object
+		getOneSelector('.files_list').innerHTML = ''; // Clear the files list in the DOM
 	}
 
 	// Updates the current path label with the current path value.
@@ -65,7 +74,6 @@ class FilesList {
 	}
 
 	goToParentDirectory() {
-		console.log(this);
 		if (this.currentPath !== this.projectPath) {
 			const parts = this.currentPath.split('/');
 			parts.pop();
@@ -89,7 +97,7 @@ class FilesList {
 			dir_section_label.className = 'dir_section_label';
 			dir_section_label.textContent = createShortString(file.relative_path.replace(file.name, ''));
 			dir_section.appendChild(dir_section_label);
-			document.querySelector('.files_list').appendChild(dir_section);
+			getOneSelector('.files_list').appendChild(dir_section);
 		}
 		const fileLabel = document.createElement('span');
 		fileLabel.textContent = file.name;
@@ -101,8 +109,8 @@ class FilesList {
 
 	// Method to remove a file label from the DOM
 	removeFileFromUserFiles(file) {
-		const file_element = document.querySelector('.files_list .file_label[data-id="' + file.path + '"]');
-		const files_dir_wrapper = document.querySelector('.files_list .files_dir[data-dir_path="' + file.relative_path.replace(file.name, '') + '"]');
+		const file_element = getOneSelector('.files_list .file_label[data-id="' + file.path + '"]');
+		const files_dir_wrapper = getOneSelector('.files_list .files_dir[data-dir_path="' + file.relative_path.replace(file.name, '') + '"]');
 		file_element.remove();
 		if (files_dir_wrapper.children.length === 1) {
 			files_dir_wrapper.remove();
@@ -115,11 +123,11 @@ class FilesList {
 		this.cRequest.sendRequest('/getFilesList', {
 			current_path: this.currentPath,
 			project_path: this.projectPath
-		})
-		.then(files => {
-			this.list = files;
-			this.displayFilesList();
-		});
+		}, true)
+			.then(files => {
+				this.list = files;
+				this.displayFilesList();
+			});
 	}
 
 	// Method to display files list in the popup
@@ -128,10 +136,10 @@ class FilesList {
 		this.selectedFileIndex = -1;
 		this.list.forEach(file => {
 			const div = createEl('div')
-				.addClass(file.type == 'dir' ? 'directory' : 'file')
+				.addClass(file.type === 'dir' ? 'directory' : 'file')
 				.onClick(() => this.handleFileSelection(file))
-				.addData('path',file.path)
-				.addData('type',file.type)
+				.addData('path', file.path)
+				.addData('type', file.type)
 				.setTEXT(file.name)
 				.appendTo(this.fileListPopup);
 		});
@@ -139,7 +147,7 @@ class FilesList {
 	}
 
 	handleFileListPopupKeydown(event) {
-		if(!this.fileListPopup._showed) return;
+		if (!this.fileListPopup._showed) return;
 
 		let keys = Object.keys(this.list);
 		event.stopPropagation();
@@ -156,11 +164,6 @@ class FilesList {
 			this.selectedFileIndex++;
 			fileListItems[this.selectedFileIndex].addClass('selected');
 		} else if (event.key === 'Enter') {
-			console.log(this.list);
-			console.log(keys);
-			console.log(this.selectedFileIndex);
-			console.log(keys[this.selectedFileIndex]);
-			console.log(this.list[keys[this.selectedFileIndex]]);
 			this.handleFileSelection(this.list[keys[this.selectedFileIndex]]);
 		} else if (event.key === 'Escape') {
 			this.closeFileListPopup();
@@ -169,7 +172,6 @@ class FilesList {
 
 	// Method to handle file selection
 	handleFileSelection(file) {
-		console.log(file);
 		if (file.type === 'dir') {
 			this.currentPath = file.path;
 			this.getFilesList();
@@ -190,9 +192,7 @@ class FilesList {
 
 	// Method to show file list popup
 	showFileListPopup() {
-		console.log('showFileListPopup');
 		this.fileListPopup.style.display = 'block';
 		this.fileListPopup._showed = true;
 	}
 }
-

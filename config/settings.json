@@ -1,6 +1,7 @@
 {
     "payload_init": {
-        "messages": []
+        "messages": [],
+        "max_tokens": 16384
     },
     "url": "http://127.0.0.1:8989/v1/chat/completions",
     "headers": {

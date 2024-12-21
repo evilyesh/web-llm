@@ -1,4 +1,4 @@
-# Project: Interactive Chat with File Management and Settings Support
+**# Project: Interactive Chat with File Management and Settings Support
 
 This project is a web application that allows users to interact with a model through an interactive chat. Users can send messages, view and edit files, and configure chat settings. The project consists of several files, each responsible for a specific functionality.
 
@@ -108,4 +108,4 @@ This project is a web application that allows users to interact with a model thr
 
 ## Conclusion
 
-This project is an interactive chat with file management and settings support. It allows users to interact with the model, view and edit files, and configure chat parameters. The project consists of several files, each responsible for a specific functionality, making it structured and easily extensible.
+This project is an interactive chat with file management and settings support. It allows users to interact with the model, view and edit files, and configure chat parameters. The project consists of several files, each responsible for a specific functionality, making it structured and easily extensible.**

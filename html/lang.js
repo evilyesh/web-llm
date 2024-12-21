@@ -12,7 +12,9 @@ const lang = {
     userMsg: 'User message',
     forModelFileIns: 'you write file name without colon or ###, please follow instruction of code formating',
     noTextSelected: 'No text for send... inter prompt.',
-    modelFormatFollow: 'please repeat with files names formated how i ask in instruction'
+    modelFormatFollow: 'please repeat with files names formated how i ask in instruction',
+    requestInProgress: 'Request in progress',
+    noQueryProvided: 'No query provided'
 };
 
 const pattern = '([\\s\\S]*?)\\`{3}.*?\\n([\\s\\S]*?)\\`{3}';

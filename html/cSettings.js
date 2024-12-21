@@ -3,13 +3,13 @@
  * Loads and saves settings, and interacts with the server.
  */
 class CSettings {
-    constructor() {
+    constructor(chat) {
+		this.chat = chat;
 		this.settingsSelect = document.querySelector('.settings_popup .settings_select');
 		this.selectedSettings = null;
 		this.configList = [];
 		this.promptSettings = null;
-
-		this.request = new CRequest();
+		this.cRequest = this.chat.cRequest;
 
 		this.loadPromptSettings();
 		this.loadSettingsList();
@@ -21,8 +21,7 @@ class CSettings {
 	}
 
 	loadSettingsList() {
-		fetch('/getSettingsList')
-			.then(response => response.json())
+		this.cRequest.sendRequest('/getSettingsList')
 			.then(data => {
 				this.configList = data;
 				data.forEach(config => {
@@ -31,8 +30,14 @@ class CSettings {
 					option.textContent = config.file_name;
 					this.settingsSelect.appendChild(option);
 				});
-				// Automatically select the first configuration
-				if (data.length > 0) {
+				// Automatically select "settings.json" if it's present
+				const defaultSettingsIndex = data.findIndex(config => config.file_name === 'settings.json');
+				if (defaultSettingsIndex !== -1) {
+					this.settingsSelect.value = data[defaultSettingsIndex].file_name;
+					this.settingsSelect.selectedIndex = defaultSettingsIndex;
+					this.handleSettingsChange({ target: this.settingsSelect });
+				} else if (data.length > 0) {
+					// If "settings.json" is not found, select the first configuration
 					this.settingsSelect.value = data[0].file_name;
 					this.settingsSelect.selectedIndex = 0;
 					this.handleSettingsChange({ target: this.settingsSelect });
@@ -51,7 +56,7 @@ class CSettings {
 	}
 
 	sendSelectedSettings(selectedSettings) {
-		this.request.sendRequest('/setSelectedSettings', { selectedSettings: selectedSettings })
+		this.cRequest.sendRequest('/setSelectedSettings', { selectedSettings: selectedSettings }, true)
 			.then(response => {
 				console.log('Selected settings saved on server:', response);
 			})
@@ -61,12 +66,12 @@ class CSettings {
 	}
 
 	loadPromptSettings() {
-		this.request.sendRequest('/getSettings')
+		this.cRequest.sendRequest('/getSettings', null, true)
 			.then(data => {
 				this.promptSettings = data;
 			})
 			.catch(error => {
-				console.error('Error load prompt settings:', error);
+				console.error('Error loading prompt settings:', error);
 			});
 	}
 }

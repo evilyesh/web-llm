@@ -11,17 +11,17 @@ class RequestData {
 	}
 
 	async getFilesContent() {
-		const response = await this.cRequest.sendRequest('/getFilesContent', {
+		return await this.cRequest.sendRequest('/getFilesContent', {
 			files: this.chat.filesList.userFiles,
 			path: this.chat.filesList.projectPath
-		});
-		return response;
+		}, true);
 	}
 
 	async buildPrompt(pmt) {
 		let prompt = '';
 		if (Object.keys(this.chat.filesList.userFiles).length) {
 			prompt += this.chat.settings.promptSettings.prefix;
+			prompt += this.chat.prefixText;
 			const files_data = await this.getFilesContent();
 			Object.keys(files_data).forEach(fileName => {
 				this.chat.filesList.userFiles[fileName].content = files_data[fileName];
@@ -36,14 +36,14 @@ class RequestData {
 		return replaceFourSpacesWithTab(prompt);
 	}
 
-	async sendPrompt(pmt, clearContext = false, useDiff = false, autoAnswer = false) {
+	async sendPrompt(pmt, clearContext = false, useDiff = false, autoAnswer = false, type = 'prompt_w_files') {
 		const prompt = await this.buildPrompt(pmt);
 		console.log(prompt);
 		const response = await this.cRequest.sendRequest('/sendPrompt', {
 			prompt: prompt,
 			clear_input: clearContext,
-			use_diff: false
+			use_diff: useDiff // Corrected the use_diff parameter to use the passed value
 		});
-		this.chat.storeResponse(response, clearContext, useDiff, autoAnswer, 'model');
+		this.chat.storeResponse(response, clearContext, useDiff, autoAnswer, 'model', type);
 	}
 }

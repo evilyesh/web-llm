@@ -6,35 +6,41 @@ from settings import Settings
 import datetime
 import psycopg2
 
+# Initialize settings
 settings = Settings(file_path='settings.json')
 selected_settings = None  # Variable to store the selected settings
 
+# Initialize Flask app
 app = Flask(__name__)
 debug = False
 
 
 @app.route('/')
 def home():
+    """Serve the home page."""
     return send_from_directory('html', 'index.html')
 
 
 @app.route('/html/<path:filename>')
 def static_files(filename):
+    """Serve static files from the 'html' directory."""
     return send_from_directory('html', filename)
 
 
 @app.route('/html.v2/<path:filename>')
 def static_files_v2(filename):
+    """Serve static files from the 'html.v2' directory."""
     return send_from_directory('html.v2', filename)
 
 
 @app.route('/getFilesList', methods=['POST'])
 def get_files():
+    """Return a list of files and directories in the specified path."""
     try:
         data = request.json
-        print(data)
         path = data.get('path') or data.get('project_path')
         current_path = data.get('current_path')
+
         if not path or not current_path:
             return jsonify({"error": "No directory provided"}), 400
 
@@ -59,98 +65,122 @@ def get_files():
 
         return jsonify(files_list), 200
 
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
     except Exception as e:
+        print(f"Exception: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/getSettings', methods=['POST'])
 def get_settings():
-    return jsonify({"prefix": settings.get_prefix(), "postfix": settings.get_postfix(), "prefix_diff": settings.get_prefix_diff(), "postfix_diff": settings.get_postfix_diff(), "prompt_prefix": settings.get_prompt_prefix()}), 200
+    """Return the current settings."""
+    return jsonify({
+        "prefix": settings.get_prefix(),
+        "postfix": settings.get_postfix(),
+        "prefix_diff": settings.get_prefix_diff(),
+        "postfix_diff": settings.get_postfix_diff(),
+        "prompt_prefix": settings.get_prompt_prefix()
+    }), 200
 
 
 @app.route('/getFilesContent', methods=['POST'])
 def get_files_content():
+    """Return the content of specified files."""
     try:
         data = request.json
-        print(data)
         files = data.get('files')
         path = data.get('path')
-        if files and path:
-            files_content = {}
-            for file in files.values():
-                with open(file.get('path'), 'r') as f:
-                    files_content[file.get('path')] = f.read()
 
-            return jsonify(files_content), 200
-        else:
+        if not files or not path:
             return jsonify({"error": "No files provided"}), 400
-    except json.JSONDecodeError:
+
+        files_content = {}
+        for file in files.values():
+            with open(file.get('path'), 'r') as f:
+                files_content[file.get('path')] = f.read()
+
+        return jsonify(files_content), 200
+
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
     except Exception as e:
+        print(f"Exception: {e}")
         return jsonify({"error": str(e)}), 500
 
 
+def calculate_total_tokens(messages):
+    total_tokens = 0
+    for message in messages:
+        total_tokens += len(message["content"].split())*3
+    return total_tokens
+
 @app.route('/sendPrompt', methods=['POST'])
 def send_prompt():
+    """Send a prompt to the model and return the response."""
     url = settings.get("url")
     headers = settings.get("headers")
     payload = settings.get("payload_init")
+    total_tokens = 0
 
     try:
         if debug:
-            total_tokens = 0
-            return jsonify({"error": "",
-                            "data": settings.get('sample'),
-                            "total_tokens": total_tokens}), 200
+            return jsonify({"error": "", "data": settings.get('sample'), "total_tokens": total_tokens}), 200
 
         data = request.json
         prompt = data.get('prompt')
         clear_input = data.get('clear_input')
         use_diff = data.get('use_diff')
 
-        if prompt:
-            if clear_input or prompt.startswith("/clear") or not payload["messages"]:
-                print('clear chat')
-                if use_diff:
-                    payload["messages"] = [{"role": "system", "content": settings.get_system_diff()}]
-                else:
-                    payload["messages"] = [{"role": "system", "content": settings.get_system()}]
-
-            payload["messages"].append({"role": "user", "content": prompt})
-            print(json.dumps(payload, indent=4))
-
-            response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-            if response.status_code == 200:
-                response_data = response.json()
-                print(json.dumps(response_data, indent=4))
-                if 'choices' in response_data:
-                    model_response = response_data["choices"][0]["message"]["content"]
-                    usage = response_data.get("usage", {})
-                    total_tokens = usage.get("total_tokens", 0)
-
-                    with open('history/history.txt', 'a') as history_file:
-                        history_file.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]\n")
-                        history_file.write(f"<|---###|>\n")
-                        history_file.write(f"\nUser: <|----####|>{prompt}<|####----|>\n")
-                        history_file.write(f"Model: <|-----#####|>{model_response}<|#####-----|>\n\n")
-                        history_file.write(f"<|###---|>\n")
-
-                    return jsonify({"error": "", "data": model_response, "total_tokens": total_tokens}), 200
-        else:
+        if not prompt:
             return jsonify({"error": "No prompt provided"}), 400
 
-    except json.JSONDecodeError:
+        if clear_input or prompt.startswith("/clear") or not payload["messages"]:
+            if use_diff:
+                payload["messages"] = [{"role": "system", "content": settings.get_system_diff()}]
+            else:
+                payload["messages"] = [{"role": "system", "content": settings.get_system()}]
+
+        payload["messages"].append({"role": "user", "content": prompt})
+        print(json.dumps(payload, indent=4))
+
+        # Check if total tokens exceed max_tokens TODO chk if messages empty and rise exception
+        while calculate_total_tokens(payload["messages"]) > payload["max_tokens"]:
+            payload["messages"].pop(0)
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+        if response.status_code == 200:
+            response_data = response.json()
+            print(json.dumps(response_data, indent=4))
+            if 'choices' in response_data:
+                model_response = response_data["choices"][0]["message"]["content"]
+
+                # payload["max_tokens"] TODO need clear previews messages in payload["messages"] for max_tokens length not overload
+                usage = response_data.get("usage", {})
+
+                with open('history/history.txt', 'a') as history_file:
+                    history_file.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]\n")
+                    history_file.write(f"<|---###|>\n")
+                    history_file.write(f"\nUser: <|----####|>{prompt}<|####----|>\n")
+                    history_file.write(f"Model: <|-----#####|>{model_response}<|#####-----|>\n\n")
+                    history_file.write(f"<|###---|>\n")
+
+                return jsonify({"error": "", "data": model_response, "usage": usage}), 200
+
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
     except Exception as e:
-        print(e)
+        print(f"Exception: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/sendEditPrompt', methods=['POST'])
 def send_edit_prompt():
+    """Send an edit prompt to the model and return the response."""
     url = settings.get("url")
     headers = settings.get("headers")
     payload = settings.get("payload_init")
@@ -160,31 +190,39 @@ def send_edit_prompt():
         prompt = data.get('prompt')
         clear_input = data.get('clear_input')
 
-        if prompt:
-            if clear_input:
-                payload["messages"] = [{"role": "system", "content": "You assist improve prompt for llm."}]
-            payload["messages"].append({"role": "user", "content": f"You assist improve prompt for llm. This is text prompt for coder LLM, improve prompt: \n{prompt}"})
-            print(json.dumps(payload, indent=4))
-
-            response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-            if response.status_code == 200:
-                response_data = response.json()
-                print(json.dumps(response_data, indent=4))
-                if 'choices' in response_data:
-                    model_response = response_data["choices"][0]["message"]["content"]
-                    payload["messages"] = []
-                    return jsonify({"error": "", "data": model_response}), 200
-        else:
+        if not prompt:
             return jsonify({"error": "No prompt provided"}), 400
-    except json.JSONDecodeError:
+
+        if clear_input:
+            payload["messages"] = [{"role": "system", "content": "You assist improve prompt for llm."}]
+        payload["messages"].append({"role": "user", "content": f"You assist improve prompt for llm. This is text prompt for coder LLM, improve prompt: \n{prompt}"})
+        print(json.dumps(payload, indent=4))
+
+        # Check if total tokens exceed max_tokens TODO chk if messages empty and rise exception
+        while calculate_total_tokens(payload["messages"]) > payload["max_tokens"]:
+            payload["messages"].pop(0)
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+        if response.status_code == 200:
+            response_data = response.json()
+            print(json.dumps(response_data, indent=4))
+            if 'choices' in response_data:
+                model_response = response_data["choices"][0]["message"]["content"]
+                payload["messages"] = []
+                return jsonify({"error": "", "data": model_response}), 200
+
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
     except Exception as e:
+        print(f"Exception: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/saveFileContent', methods=['POST'])
 def save_file():
+    """Save the content of a file."""
     try:
         data = request.json
         path = data.get('path')
@@ -192,55 +230,66 @@ def save_file():
         file_path = data.get('file_path')
         file_content = data.get('data')
 
-        if path and file_name and file_path and file_content:
-            with open(file_path, 'w') as file:
-                file.write(file_content)
-
-            return jsonify({"error": "", "msg": f"File {os.path.join(path, file_name)} updated"}), 200
-
-        else:
+        if not path or not file_name or not file_path or not file_content:
             return jsonify({"error": f"File {os.path.join(path, file_name)} was not updated."})
 
-    except json.JSONDecodeError:
+        with open(file_path, 'w') as file:
+            file.write(file_content)
+
+        return jsonify({"error": "", "msg": f"File {os.path.join(path, file_name)} updated"}), 200
+
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
     except Exception as e:
+        print(f"Exception: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/saveSettings', methods=['POST'])
 def save_settings():
+    """Save the current settings."""
     try:
         data = request.json
         prefix = data.get('prefix')
         postfix = data.get('postfix')
-        if prefix and postfix:
-            settings.set('prefix', prefix)
-            settings.set('postfix', postfix)
-            return jsonify({"error": "", "msg": f"Settings updated"}), 200
-        else:
+
+        if not prefix or not postfix:
             return jsonify({"error": f"Settings were not updated."})
-    except json.JSONDecodeError:
+
+        settings.set('prefix', prefix)
+        settings.set('postfix', postfix)
+        return jsonify({"error": "", "msg": f"Settings updated"}), 200
+
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
+    except Exception as e:
+        print(f"Exception: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/runSQLQuery', methods=['POST'])
 def run_sql_query():
+    """Execute a SQL query and return the results."""
     try:
         data = request.json
         host = data.get('host')
         port = data.get('port')
         username = data.get('username')
         password = data.get('password')
+        database = data.get('database')  # Added database field
         query = data.get('query')
 
-        if not host or not port or not username or not password or not query:
+        if not host or not port or not username or not password or not database or not query:
             return jsonify({"error": "Missing required parameters"}), 400
 
         conn = psycopg2.connect(
             host=host,
             port=port,
             user=username,
-            password=password
+            password=password,
+            database=database  # Added database field
         )
         cursor = conn.cursor()
         cursor.execute(query)
@@ -248,16 +297,22 @@ def run_sql_query():
         cursor.close()
         conn.close()
 
-        return jsonify({"error": "", "results": results}), 200
+        return jsonify({"error": "", "data": results}), 200
 
     except psycopg2.Error as e:
+        print(f"psycopg2.Error: {e}")
         return jsonify({"error": str(e)}), 500
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
+    except Exception as e:
+        print(f"Exception: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/getSettingsList', methods=['GET'])
+@app.route('/getSettingsList', methods=['POST'])
 def get_settings_list():
+    """Return a list of available settings files."""
     try:
         config_dir = 'config/'
         config_files = [f for f in os.listdir(config_dir) if f.endswith('.json')]
@@ -275,19 +330,26 @@ def get_settings_list():
         return jsonify(settings_list), 200
 
     except Exception as e:
+        print(f"Exception: {e}")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/setSelectedSettings', methods=['POST'])
 def set_selected_settings():
+    """Set the selected settings file."""
     global selected_settings
     try:
         data = request.json
         selected_settings = data.get('selectedSettings')
         settings.loadSettings(selected_settings)
         return jsonify({"error": "", "msg": f"Selected settings set to {selected_settings}"}), 200
-    except json.JSONDecodeError:
+
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
         return jsonify({"error": "Invalid JSON"}), 400
+    except Exception as e:
+        print(f"Exception: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
