@@ -12,6 +12,7 @@ class ChatList {
 		this.settingsPopup = getOneSelector('.settings_popup');
 		this.closeButton = getOneSelector('.close_button');
 		this.submitBtn = getOneSelector('.submit_btn');
+		this.prefixText = getOneSelector('.prefix_text');
 		this.clearContext = getOneSelector('.clear_context');
 		this.autoAnswer = getOneSelector('.auto_answer');
 		this.improvePrompt = getOneSelector('.edit_button');
@@ -24,6 +25,8 @@ class ChatList {
 		this.sqlUsernameInput = getOneSelector('.sql_username');
 		this.sqlPasswordInput = getOneSelector('.sql_password');
 		this.sqlDatabaseInput = getOneSelector('.sql_database');
+		// this.apiSelect = getOneSelector('.api_select'); // Add this line to get the API select element
+		// this.selectedApi = this.apiSelect.value; // Initialize the selected API
 		this.requestInProgress = false; // Flag to track if a request is in progress
 
 		this.cRequest = new CRequest(this);
@@ -94,6 +97,10 @@ class ChatList {
 			e.stopPropagation();
 			this.sendRequestIfNotInProgress(() => this.executeSQLQuery(this.sqlQueryInput.value), this.sqlQueryInput.value, 'user_message');
 		});
+
+		// this.apiSelect.addEventListener('change', e => {
+		// 	this.selectedApi = e.target.value; // Update the selected API when the user changes the select
+		// });
 	}
 
 	scrollToMessage(mesEl) {
@@ -150,7 +157,7 @@ class ChatList {
 		this.scrollToMessage(msg.html);
 		this.chatMessageInput.value = '';
 		this.requestInProgress = false; // Reset the flag after response is received
-		this.enableChatInputAndSubmitBtn();
+		this.enableChatInput();
 	}
 
 	handleConfirmClick(btn, response) {
@@ -187,14 +194,16 @@ class ChatList {
 	handleError(message, error = null) {
 		console.error(message + (error ? error.message : ''));
 		oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error_msg', 5000);
-		this.enableChatInputAndSubmitBtn();
+		this.enableChatInput();
 	}
 
 	sendEditMessage() {
 		if (this.chatMessageInput.value) {
 			this.cRequest.sendRequest('/sendEditPrompt', {
-				prompt: this.chatMessageInput.value,
-				clear_input: this.clearContext.checked
+				prompt: this.chatMessageInput.value + '\n' + this.prefixText.value,
+				clear_input: this.clearContext.checked,
+				// api: this.selectedApi // Use the selected API
+				api: ''
 			})  // TODO move somewhere
 				.then(response => {
 					console.log(response);
@@ -254,11 +263,14 @@ class ChatList {
 			return;
 		}
 		this.requestInProgress = true;
-		this.disableChatInputAndSubmitBtn();
+		this.disableChatInput();
 		if (messageText && className) {
 			this.storeMessage(messageText, className);
 		}
-		requestFunction();
+		requestFunction()
+			.catch(error => {
+				this.handleError(lang.errFc, error);
+			});
 	}
 
 	resetChatData() {
@@ -267,12 +279,12 @@ class ChatList {
 		this.requestInProgress = false; // Reset the request in progress flag
 	}
 
-	disableChatInputAndSubmitBtn() {
+	disableChatInput() {
 		this.chatMessageInput.disabled = true;
 		this.submitBtn.disabled = true;
 	}
 
-	enableChatInputAndSubmitBtn() {
+	enableChatInput() {
 		this.chatMessageInput.disabled = false;
 		this.submitBtn.disabled = false;
 	}

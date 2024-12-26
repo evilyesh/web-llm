@@ -3,7 +3,7 @@ SYSTEM_PROMPT = """You are a coding assistant specializing in Python, JavaScript
         **Instructions:**
         1. **File Naming and Code Formatting**:
            - Your responses should be informative and logical.
-           - First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.
+           - First think step-by-step - describe your plan for what to build in pseudocode.
            - Minimize any other prose.
            - Use Markdown formatting in your answers.
            - Always format code using Markdown code blocks, with the programming language specified at the start.        
@@ -52,7 +52,8 @@ SYSTEM_DIFF_PROMPT = """
 PREFIX = """
         You are a coding assistant specializing in Python, JavaScript, CSS, HTML, and PHP. 
         1. **File Naming and Code Formatting**:
-           - First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.
+           - First think step-by-step - describe your plan for what to build in pseudocode.
+           - Write a short plan for solving the problem
            - Minimize any other prose.
            - Use Markdown formatting in your answers.
            - Always format code using Markdown code blocks, with the programming language specified at the start. 
@@ -116,3 +117,5 @@ PATTERN = r".*\s*```([\s\S]+?)```"
 SAMPLE = "I'd be happy to help you with that. To avoid using the `onclick` attribute, you can use JavaScript to add event listeners to your buttons instead. Here's how you can modify your `displayMessage` method to add click event listeners to the \"Confirm\" and \"Cancel\" buttons chat.js:\n\n```javascript\ndisplayMessage() {\n    let messageElement = document.createElement('div');\n    let content = this.parsed_response;\n    Object.keys(this.parsed_data).forEach(hash => {\n        const oldContent = this.files_data[this.parsed_data[hash].file] || '';\n        const newContent = this.parsed_data[hash].data;\n        const diff = this.renderDiff(oldContent, newContent);\n        content = content.replace(hash, `<div class=\"code_wrap\" id=\"d${hash}\"><pre><code>${diff.final_html}</pre></code><button class=\"confirm-btn\">Confirm</button><button class=\"cancel-btn\">Cancel</button></div>`);\n    });\n\n    // ... rest of the code\n\n    messageElement.innerHTML = content;\n    this.chatContent.appendChild(messageElement);\n\n    messageElement.getManySelector('.removed').forEach(i =>{\n        i.removeClass('removed');\n    });\n    messageElement.getManySelector('.added').forEach(i =>{\n        i.removeClass('added');\n    });\n\n    // Add event listeners to the buttons\n    messageElement.getManySelector('.confirm-btn').forEach(btn => {\n        btn.addEventListener('click', () => this.handleConfirmClick(btn));\n    });\n    messageElement.getManySelector('.cancel-btn').forEach(btn => {\n        btn.addEventListener('click', () => this.handleCancelClick(btn));\n    });\n\n    console.log({content});\n}\n```\n\nYou can then add the `handleConfirmClick` and `handleCancelClick` methods to your `Chat` class to handle the button clicks:\n\n```javascript\nhandleConfirmClick(btn) {\n    const codeWrap = btn.parentElement;\n    const hash = codeWrap.id.substring(1);\n    const file = this.parsed_data[hash].file;\n    const data = codeWrap.querySelector('code').textContent;\n\n    // Send the data to the server\n    this.sendRequest('/saveFileContent', {file, data})\n        .then(response => {\n            console.log(response);\n            // Handle the response\n        })\n        .catch(error => {\n            console.error(error);\n            // Handle the error\n        });\n}\n\nhandleCancelClick(btn) {\n    const codeWrap = btn.parentElement;\n    const hash = codeWrap.id.substring(1);\n\n    // Remove the code wrap from the view\n    codeWrap.remove();\n\n    // Remove the data from parsed_data\n    delete this.parsed_data[hash];\n}\n```"
 
 PROMPT_PREFIX = "\n**What need to do***\n"
+
+EDIT_PROMPT_PREFIX = "You assist improve prompt for llm. Write steps for realise this task.\n No need to write solution code.\n This is text prompt for coder LLM, improve prompt:"

@@ -30,7 +30,7 @@ python3 main.py
 ```
 Llama.cpp https://github.com/ggerganov/llama.cpp
 
-Open your browser and navigate to [http://127.0.0.1:5001/](http://127.0.0.1:5001/).
+6. Open your browser and navigate to [http://127.0.0.1:5001/](http://127.0.0.1:5001/).
 
 ### Usage
 
@@ -57,6 +57,7 @@ The response from the model will be displayed in a diff manner.
 - [x] Make settings popup.
 - [x] make sql query to database.
 - [ ] currently can't edit files with ``` in content
+- [ ] set files encodings
 
 
 - This project uses the jsdiff library, which is licensed under the BSD-3-Clause license. https://github.com/kpdecker/jsdiff

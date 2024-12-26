@@ -114,25 +114,28 @@ def get_files_content():
 def calculate_total_tokens(messages):
     total_tokens = 0
     for message in messages:
+        print(message)
         total_tokens += len(message["content"].split())*3
     return total_tokens
 
 @app.route('/sendPrompt', methods=['POST'])
 def send_prompt():
     """Send a prompt to the model and return the response."""
-    url = settings.get("url")
-    headers = settings.get("headers")
-    payload = settings.get("payload_init")
     total_tokens = 0
-
     try:
         if debug:
             return jsonify({"error": "", "data": settings.get('sample'), "total_tokens": total_tokens}), 200
 
         data = request.json
+        api = data.get('api', 'openai')  # Default to OpenAI if 'api' is not provided
         prompt = data.get('prompt')
         clear_input = data.get('clear_input')
         use_diff = data.get('use_diff')
+        url = settings.get("url")
+        headers = settings.get("headers")
+        payload = settings.get("payload_init")
+        print(json.dumps(payload, indent=4))
+
 
         if not prompt:
             return jsonify({"error": "No prompt provided"}), 400
@@ -143,22 +146,32 @@ def send_prompt():
             else:
                 payload["messages"] = [{"role": "system", "content": settings.get_system()}]
 
+        # payload["max_tokens"] = settings.get("max_tokens")
+        # payload["cache_prompt"] = settings.get("cache_prompt")
+        # payload["samplers"] = "dkypmxt"
+
+        # Check if total tokens exceed max_tokens
+        try:
+            if calculate_total_tokens([{'content': prompt}]) + calculate_total_tokens([{'content': payload["messages"][0].get('content')}]) > payload["max_tokens"]:
+                payload["messages"] = [payload["messages"][0]]
+            else:
+                while calculate_total_tokens(payload["messages"]) + calculate_total_tokens([{'content': prompt}]) > payload["max_tokens"]:
+                    payload["messages"].pop(1) if len(payload["messages"]) > 1 else None  # dont delete system prompt
+        except Exception as e:
+            print(e)
+
         payload["messages"].append({"role": "user", "content": prompt})
         print(json.dumps(payload, indent=4))
 
-        # Check if total tokens exceed max_tokens TODO chk if messages empty and rise exception
-        while calculate_total_tokens(payload["messages"]) > payload["max_tokens"]:
-            payload["messages"].pop(0)
-
+        print("url", url)
         response = requests.post(url, headers=headers, data=json.dumps(payload))
-
+        print(response)
         if response.status_code == 200:
             response_data = response.json()
             print(json.dumps(response_data, indent=4))
             if 'choices' in response_data:
                 model_response = response_data["choices"][0]["message"]["content"]
-
-                # payload["max_tokens"] TODO need clear previews messages in payload["messages"] for max_tokens length not overload
+                payload["messages"].append({"role": "assistant", "content": model_response})
                 usage = response_data.get("usage", {})
 
                 with open('history/history.txt', 'a') as history_file:
@@ -181,26 +194,39 @@ def send_prompt():
 @app.route('/sendEditPrompt', methods=['POST'])
 def send_edit_prompt():
     """Send an edit prompt to the model and return the response."""
-    url = settings.get("url")
-    headers = settings.get("headers")
-    payload = settings.get("payload_init")
-
     try:
         data = request.json
+        api = data.get('api', 'openai')  # Default to OpenAI if 'api' is not provided
         prompt = data.get('prompt')
         clear_input = data.get('clear_input')
+        use_diff = data.get('use_diff')
 
         if not prompt:
             return jsonify({"error": "No prompt provided"}), 400
 
-        if clear_input:
-            payload["messages"] = [{"role": "system", "content": "You assist improve prompt for llm."}]
-        payload["messages"].append({"role": "user", "content": f"You assist improve prompt for llm. This is text prompt for coder LLM, improve prompt: \n{prompt}"})
-        print(json.dumps(payload, indent=4))
+        url = settings.get("url")
+        headers = settings.get("headers")
+        payload = settings.get("payload_init")
 
-        # Check if total tokens exceed max_tokens TODO chk if messages empty and rise exception
-        while calculate_total_tokens(payload["messages"]) > payload["max_tokens"]:
-            payload["messages"].pop(0)
+        if clear_input or prompt.startswith("/clear") or not payload["messages"]:
+            if use_diff:
+                payload["messages"] = [{"role": "system", "content": settings.get_system_diff()}]
+            else:
+                payload["messages"] = [{"role": "system", "content": settings.get_system()}]
+
+        try:
+            # Check if total tokens exceed max_tokens
+            if calculate_total_tokens([{'content': f"{settings.get_edit_prompt_prefix()} \n{prompt}"}]) + calculate_total_tokens([{'content': payload["messages"][0].get('content')}]) > payload["max_tokens"]:
+                payload["messages"] = [payload["messages"][0]]
+            else:
+                while calculate_total_tokens(payload["messages"]) + calculate_total_tokens([{'content': f"{settings.get_edit_prompt_prefix()} \n{prompt}"}]) > payload["max_tokens"]:
+                    payload["messages"].pop(1) if len(payload["messages"]) > 1 else None  # dont delete system prompt
+        except Exception as e:
+            print(e)
+
+
+        payload["messages"].append({"role": "user", "content": f"{settings.get_edit_prompt_prefix()} \n{prompt}"})
+        print(json.dumps(payload, indent=4))
 
         response = requests.post(url, headers=headers, data=json.dumps(payload))
 
@@ -209,7 +235,7 @@ def send_edit_prompt():
             print(json.dumps(response_data, indent=4))
             if 'choices' in response_data:
                 model_response = response_data["choices"][0]["message"]["content"]
-                payload["messages"] = []
+                payload["messages"].append({"role": "assistant", "content": model_response})
                 return jsonify({"error": "", "data": model_response}), 200
 
     except json.JSONDecodeError as e:

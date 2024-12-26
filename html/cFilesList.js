@@ -157,12 +157,14 @@ class FilesList {
 			fileListItems[this.selectedFileIndex].removeClass('selected');
 			this.selectedFileIndex--;
 			fileListItems[this.selectedFileIndex].addClass('selected');
+			fileListItems[this.selectedFileIndex].scrollIntoView();
 		} else if (event.key === 'ArrowDown' && this.selectedFileIndex < fileListItems.length - 1) {
 			if (typeof fileListItems[this.selectedFileIndex] !== 'undefined') {
 				fileListItems[this.selectedFileIndex].removeClass('selected');
 			}
 			this.selectedFileIndex++;
 			fileListItems[this.selectedFileIndex].addClass('selected');
+			fileListItems[this.selectedFileIndex].scrollIntoView();
 		} else if (event.key === 'Enter') {
 			this.handleFileSelection(this.list[keys[this.selectedFileIndex]]);
 		} else if (event.key === 'Escape') {

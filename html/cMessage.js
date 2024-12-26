@@ -44,10 +44,11 @@ class Message {
         if (this.data.type === 'prompt') {
 
             if (Object.entries(this.data.userFiles).length > 0) { // if there are files
-                if (Object.entries(this.data.parsedData).length) {
-                    content = this.replaceParsedData(content);
-                } else { // if there are no parsed data, we need show the message with warning
-                    this.notFollowFormat = true;
+                content = this.replaceParsedData(content);
+
+                // possibly, we need show the message with warning
+                if (Object.entries(this.data.parsedData).length !== Object.entries(this.data.userFiles).length) {
+                    this.notFollowFormat = true; // possibly not follow format or make editings in only necessary files
                 }
             }
 
@@ -104,7 +105,6 @@ class Message {
         }
     }
 
-
     replaceParsedData(content) {
         for (const hash in this.data.parsedData) {
             const diff = this.renderDiff(
@@ -137,7 +137,10 @@ class Message {
         for (const hash in this.data.unknownData) {
             content = content.replace(hash, `
 				<div id="${hash}">
+    				<div class="file_name">unknown filename, save it? !TODO!:</div>  <!-- TODO -->
 					<pre><code>${escapeHtml(this.data.unknownData[hash])}</code></pre>
+                    <button class="save_as" data-id="${hash}">Save</button>
+					<button class="cancel">Cancel</button>
 				</div>
 			`);
         }

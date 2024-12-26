@@ -24,6 +24,7 @@ class Settings:
         self.files_wrapper = lang.FILES_WRAPPER
         self.pattern = lang.PATTERN
         self.sample = lang.SAMPLE
+        self.edit_prompt_prefix = lang.EDIT_PROMPT_PREFIX
 
     def _read_settings(self):
         try:
@@ -95,6 +96,9 @@ class Settings:
 
     def get_pattern(self):
         return self.pattern
+
+    def get_edit_prompt_prefix(self):
+        return self.edit_prompt_prefix
 
     def loadSettings(self, file_path):
         self.file_path = os.path.join('config/', file_path)

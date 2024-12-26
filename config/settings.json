@@ -1,11 +1,13 @@
 {
-    "payload_init": {
-        "messages": [],
-        "max_tokens": 16384
-    },
-    "url": "http://127.0.0.1:8989/v1/chat/completions",
-    "headers": {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-    }
+  "payload_init": {
+    "messages": [],
+    "max_tokens": 16384,
+    "cache_prompt": true
+  },
+  "url": "http://127.0.0.1:8989/v1/chat/completions",
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json"
+  }
 }
+

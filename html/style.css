@@ -221,9 +221,11 @@ button:active,
 
 #loading-animation {
 	position: fixed;
-	top: 30px;
-	right: 30px;
+	bottom: 30px;
+	right: 50%;
 	text-align: center;
+	translate:50%;
+    z-index: 9999;
 	color: #f8f8f2;
 }
 
@@ -363,8 +365,11 @@ button:active,
 	margin-left: 15px;
 }
 
-.user_msg pre, .user_message pre {
+pre {
 	white-space: break-spaces;
+	padding: 10px;
+	border: 1px solid #5996a4;
+	border-radius: 10px;
 }
 
 .code_wrap {

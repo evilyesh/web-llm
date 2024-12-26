@@ -3,9 +3,9 @@
  * Provides methods for sending requests and processing responses.
  */
 class CRequest {
-    // Constructor to initialize the path property
+	// Constructor to initialize the path property
 	constructor(chat) {
-        this.chat = chat;
+		this.chat = chat;
 		this.path = '';
 		this.loadingAnimation = document.querySelector('#loading-animation');
 	}
@@ -24,27 +24,34 @@ class CRequest {
 		// Ensure the loading animation is displayed before the request is sent
 		this.loadingAnimation.style.display = 'block';
 		if(!hidden){
-            this.chat.disableChatInputAndSubmitBtn();
+			this.chat.disableChatInput();
 		}
 
 		return fetch(url, options)
 			.then(response => {
 				if (!response.ok) {
-					throw new Error('Network response was not ok ' + response.statusText);
+					return response.json().then(errorData => {
+						throw new Error(errorData.error || 'Network response was not ok ' + response.statusText);
+					});
 				}
 				return response.json();
 			})
 			.catch(error => {
 				console.error('There was a problem with the fetch operation:', error);
-				throw new Error('Network response was not ok ' + error.statusText);
+				this.loadingAnimation.style.display = 'none';
+				this.chat.requestInProgress = false;
+				if(!hidden) {
+					this.chat.enableChatInput();
+				}
+				throw error; // Re-throw the error to be handled by the caller
 			})
 			.finally(() => {
 				console.log('Request completed ' + path);
 				this.loadingAnimation.style.display = 'none';
-                this.chat.requestInProgress = false;
-                if(!hidden) {
-                    this.chat.enableChatInputAndSubmitBtn();
-                }
-            });
+				this.chat.requestInProgress = false;
+				if(!hidden) {
+					this.chat.enableChatInput();
+				}
+			});
 	}
 }

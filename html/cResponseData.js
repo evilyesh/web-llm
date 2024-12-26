@@ -43,6 +43,8 @@ class ResponseData {
 			for (const file of Object.values(this.userFiles)) {
 				let regex = new RegExp(escapeRegExp(file.relative_path) + ':' + pattern, 'g');
 				let match = regex.exec(data);
+				console.log(regex);
+				console.log(match);
 				if(match){
 					const uuid = '###' + simpleHash(match[2]) + '###';
 					this.parsedData[uuid] = { file: file, data: match[2] };
@@ -52,6 +54,8 @@ class ResponseData {
 
 				regex = new RegExp('#\\s*' + escapeRegExp(file.relative_path) + pattern, 'g');
 				match = regex.exec(data);
+				console.log(regex);
+				console.log(match);
 				if(match){
 					const uuid = '###' + simpleHash(match[2]) + '###';
 					this.parsedData[uuid] = { file: file, data: match[2] };
