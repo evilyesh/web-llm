@@ -25,82 +25,26 @@ class ChatList {
 		this.sqlUsernameInput = getOneSelector('.sql_username');
 		this.sqlPasswordInput = getOneSelector('.sql_password');
 		this.sqlDatabaseInput = getOneSelector('.sql_database');
-		// this.apiSelect = getOneSelector('.api_select'); // Add this line to get the API select element
-		// this.selectedApi = this.apiSelect.value; // Initialize the selected API
-		this.requestInProgress = false; // Flag to track if a request is in progress
+		this.recordButton = getOneSelector('.record_btn');
+		this.indexFilesBtn = getOneSelector('.index_files_btn');
+		this.mediaRecorder = null;
+		this.audioChunks = [];
+		this.requestInProgress = false;
 
 		this.cRequest = new CRequest(this);
 		this.filesList = new FilesList(this);
 		this.settings = new CSettings(this);
-		this.requestData = new RequestData(this); // Initialize RequestData with the ChatList instance
+		this.requestData = new RequestData(this);
+		this.messageManager = new MessageManager(this);
+		this.userInputHandler = new UserInputHandler(this);
+		this.requestManager = new RequestManager(this);
+		this.recordingManager = new RecordingManager(this);
 
 		window.addEventListener('error', e => {
 			this.handleError(lang.errMsg, e);
 		});
 
-		this.chatPathInput.addEventListener('change', e => {
-			this.filesList.setPath(e.target.value);
-		});
-
-		this.chatPathInput.addEventListener('keyup', e => {
-			if (e.key === 'Enter') {
-				this.filesList.setPath(e.target.value);
-				this.closeSettings();
-			}
-		});
-
-		this.chatMessageInput.addEventListener('keyup', e => {
-			if (e.key === 'Escape') {
-				this.filesList.closeFileListPopup();
-			}
-			if (e.key === '/') {
-				const inputValue = e.target.value;
-				if (inputValue.includes('./')) {
-					this.filesList.getFilesList();
-				}
-				if (inputValue.includes('../')) {
-					this.filesList.goToParentDirectory();
-					this.filesList.getFilesList();
-				}
-			}
-			if (e.key === 'Enter' && e.ctrlKey) {
-				this.sendRequestIfNotInProgress(() => this.requestData.sendPrompt(this.chatMessageInput.value, this.clearContext.checked, this.useDiff.checked, this.autoAnswer.checked, 'prompt_w_files'), this.chatMessageInput.value, 'user_message');
-			}
-		});
-
-		this.submitBtn.addEventListener('click', e => {
-			e.preventDefault();
-			e.stopPropagation();
-			this.sendRequestIfNotInProgress(() => this.requestData.sendPrompt(this.chatMessageInput.value, this.clearContext.checked, this.useDiff.checked, this.autoAnswer.checked, 'prompt_w_files'), this.chatMessageInput.value, 'user_message');
-		});
-
-		this.settingsButton.addEventListener('click', () => {
-			this.settingsPopup.style.display = 'block';
-		});
-
-		this.closeButton.addEventListener('click', () => {
-			this.closeSettings();
-		});
-
-		this.pWr.addEventListener('click', e => {
-			if (this.settingsPopup.style.display !== 'none') {
-				this.closeSettings();
-			}
-		});
-
-		this.improvePrompt.addEventListener('click', e => {
-			this.sendRequestIfNotInProgress(() => this.sendEditMessage());
-		});
-
-		this.sqlSubmitBtn.addEventListener('click', e => {
-			e.preventDefault();
-			e.stopPropagation();
-			this.sendRequestIfNotInProgress(() => this.executeSQLQuery(this.sqlQueryInput.value), this.sqlQueryInput.value, 'user_message');
-		});
-
-		// this.apiSelect.addEventListener('change', e => {
-		// 	this.selectedApi = e.target.value; // Update the selected API when the user changes the select
-		// });
+		this.userInputHandler.setupEventListeners();
 	}
 
 	scrollToMessage(mesEl) {
@@ -114,50 +58,26 @@ class ChatList {
 		this.chatMessageInput.focus();
 	}
 
-	storeMessage(messageText, className, type) {
-		const msg = new Message('mid' + Date.now(), {
-			className: className,
-			data: new ResponseData(this, {data: messageText}), // data is the message text
-			author: 'user',
-			chat: this, // parent chat class - Chat
-			type: type
-		});
-		msg.html.appendTo(this.chatContent);
-		this.messages.push(msg);
-		this.scrollToMessage(msg.html);
+	handleError(message, error = null) {
+		console.error(message + (error ? error.message : ''));
+		oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error_msg', 5000);
+		this.enableChatInput();
 	}
 
-	storeResponse(response, clearContext, useDiff, autoAnswer, author, type) {
-		// Store the response data in the chat
-		console.log('Response from server:', response);
-
-		const msg = new Message('mid' + Date.now(), {
-			className: 'model_responce',
-			data: new ResponseData(this, response),
-			author: author,
-			chat: this, // parent chat class - Chat
-			clearContext: clearContext, // clear context
-			useDiff: useDiff, // use diff
-			autoAnswer: autoAnswer, // if model not following format we can auto answer
-			type: type
-		});
-		msg.html.appendTo(this.chatContent);
-		this.messages.push(msg);
-
-		if (msg.notFollowFormat) {
-			this.storeMessage(lang.modelFormatFollow, 'model_format_err', 'model_format_err');
-			if (msg.autoAnswer) {
-				// create and send answer to model
-				this.requestData.sendPrompt(lang.modelFormatFollow, msg.clearContext, msg.useDiff, msg.autoAnswer, type)
-					.then(response => {
-						// do nothing, think about TODO
-					});
-			}
-		}
-		this.scrollToMessage(msg.html);
+	resetChatData() {
+		this.messages = [];
 		this.chatMessageInput.value = '';
-		this.requestInProgress = false; // Reset the flag after response is received
-		this.enableChatInput();
+		this.requestInProgress = false;
+	}
+
+	disableChatInput() {
+		this.chatMessageInput.disabled = true;
+		this.submitBtn.disabled = true;
+	}
+
+	enableChatInput() {
+		this.chatMessageInput.disabled = false;
+		this.submitBtn.disabled = false;
 	}
 
 	handleConfirmClick(btn, response) {
@@ -174,7 +94,7 @@ class ChatList {
 			file_name: file.name,
 			file_path: file.path,
 			data: replaceTabWithFourSpaces(unescapeHtml(codeBlock.textContent))
-		}, true)  // TODO move somewhere
+		}, true)
 			.then(response => {
 				console.log(response);
 				codeWrap.getOneSelector('.cancel').remove();
@@ -191,20 +111,19 @@ class ChatList {
 		delete response.parsedData[hash];
 	}
 
-	handleError(message, error = null) {
-		console.error(message + (error ? error.message : ''));
-		oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error_msg', 5000);
-		this.enableChatInput();
-	}
-
 	sendEditMessage() {
 		if (this.chatMessageInput.value) {
+			let filesText = '';
+			Object.values(this.filesList.userFiles).forEach(file => {
+				filesText += `\nFile: ${file.relative_path}`;
+				filesText += `${lang.wrap}${file.content}${lang.wrap}\n`;
+			});
+			console.log(filesText);
 			this.cRequest.sendRequest('/sendEditPrompt', {
-				prompt: this.chatMessageInput.value + '\n' + this.prefixText.value,
+				prompt: this.chatMessageInput.value + '\n' + this.prefixText.value + '\n' + filesText,
 				clear_input: this.clearContext.checked,
-				// api: this.selectedApi // Use the selected API
 				api: ''
-			})  // TODO move somewhere
+			})
 				.then(response => {
 					console.log(response);
 					const msg = new Message('mid' + Date.now(), {
@@ -233,7 +152,7 @@ class ChatList {
 				port: this.sqlPortInput.value,
 				username: this.sqlUsernameInput.value,
 				password: this.sqlPasswordInput.value,
-				database: this.sqlDatabaseInput.value, // Added database input
+				database: this.sqlDatabaseInput.value,
 				query: query
 			})
 				.then(response => {
@@ -257,35 +176,21 @@ class ChatList {
 		}
 	}
 
-	sendRequestIfNotInProgress(requestFunction, messageText = null, className = null) {
-		if (this.requestInProgress) {
-			this.handleError(lang.requestInProgress);
-			return;
+	indexProjectFiles() {
+		const projectPath = this.chatPathInput.value;
+		if (projectPath) {
+			this.cRequest.sendRequest('/parseProjectFiles', {
+				path: projectPath,
+				exclude_dirs: []
+			})
+				.then(response => {
+					console.log(response);
+				})
+				.catch(error => {
+					this.handleError(lang.errFc, error);
+				});
+		} else {
+			this.handleError(lang.noPathProvided);
 		}
-		this.requestInProgress = true;
-		this.disableChatInput();
-		if (messageText && className) {
-			this.storeMessage(messageText, className);
-		}
-		requestFunction()
-			.catch(error => {
-				this.handleError(lang.errFc, error);
-			});
-	}
-
-	resetChatData() {
-		this.messages = [];
-		this.chatMessageInput.value = ''; // Clear the input field
-		this.requestInProgress = false; // Reset the request in progress flag
-	}
-
-	disableChatInput() {
-		this.chatMessageInput.disabled = true;
-		this.submitBtn.disabled = true;
-	}
-
-	enableChatInput() {
-		this.chatMessageInput.disabled = false;
-		this.submitBtn.disabled = false;
 	}
 }

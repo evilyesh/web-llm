@@ -59,14 +59,11 @@ class FilesList {
 	addFile(file) {
 		// Calculate the relative path
 		const relativePath = file.path.replace(this.projectPath, '');
-		// Add the file to the list with the relative path as the key
-		this.list[relativePath] = {
-			name: file.name,
-			path: file.path,
-			data: file.data,
-			parsed_data: file.parsed_data || null,
-			relative_path: file.relative_path
-		};
+
+		if(this.userFiles[file.path]){
+			console.log(this.list[relativePath]);
+			return;
+		}
 		// Add the file to userFiles for tracking
 		this.userFiles[file.path] = file;
 		// Create file label in the DOM

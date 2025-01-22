@@ -1,5 +1,5 @@
 * {
-    box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 body {
@@ -65,6 +65,7 @@ button {
 	padding: 10px;
 	font-family: 'Fira Code', monospace;
 	transition: background 0.2s;
+	font-size: 14px;
 }
 
 input:hover,
@@ -113,7 +114,7 @@ button:active,
 }
 
 .chat_container {
-	height: 65vh;
+	height: 72vh;
 	display: flex;
 	flex-direction: column-reverse;
 }
@@ -149,18 +150,26 @@ button:active,
 	resize: vertical; /* Allow resizing only by height */
 }
 
-.chat_form button[type="submit"] {
+.chat_form .buttons_wr {
+	display: flex;
+	flex-direction: column;
+}
+
+.chat_form button[type="submit"],
+.chat_form button.record_btn {
 	background: #6272a4;
 	color: #f8f8f2;
 	border: none;
 	border-radius: 4px;
-	padding: 10px;
+	padding: 5px 10px;
 	font-family: 'Fira Code', monospace;
 	cursor: pointer;
 	transition: background 0.2s;
+	height: 50%;
 }
 
-.chat_form button[type="submit"]:hover {
+.chat_form button[type="submit"]:hover,
+.chat_form button.record_btn:hover {
 	background: #50525b;
 }
 
@@ -225,7 +234,7 @@ button:active,
 	right: 50%;
 	text-align: center;
 	translate:50%;
-    z-index: 9999;
+	z-index: 9999;
 	color: #f8f8f2;
 }
 
@@ -352,6 +361,10 @@ button:active,
 	border-radius: 10px;
 	padding: 10px;
 	border: 1px solid #6272a4;
+}
+
+.model_responce{
+	border: 2px solid #6272a4;
 }
 
 .model_format_err{
@@ -545,4 +558,30 @@ pre {
 		flex-direction: row;
 		flex-wrap: wrap;
 	}
+}
+
+.chat_form button.record_btn {
+	font-size: 24px;
+	color: red;
+	position: relative;
+}
+
+.chat_form button.record_btn.recording::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: 2px solid #ff0000;
+	border-top-color: transparent;
+	animation: wave 1s infinite;
+}
+
+@keyframes wave {
+	0% { transform: translate(-50%, -50%) rotate(0deg); }
+	50% { transform: translate(-50%, -50%) rotate(180deg); }
+	100% { transform: translate(-50%, -50%) rotate(360deg); }
 }

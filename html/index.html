@@ -1,18 +1,23 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
+	<meta charset="UTF-8">
 	<title>web-llm</title>
 	<link rel="stylesheet" href="/html/style.css">
 
 	<script src="/html/lib/diff.js"></script>
 	<script src="/html/fn.js"></script>
 	<script src="/html/lang.js"></script>
+	<script src="/html/cRecordingManager.js"></script>
 	<script src="/html/cRequest.js"></script>
 	<script src="/html/cRequestData.js"></script>
+	<script src="/html/cRequestManager.js"></script>
 	<script src="/html/cResponseData.js"></script>
 	<script src="/html/cSettings.js"></script>
 	<script src="/html/cFilesList.js"></script>
 	<script src="/html/cMessage.js"></script>
+	<script src="/html/cMessageManager.js"></script>
+	<script src="/html/cUserInputHandler.js"></script>
 	<script src="/html/cChatList.js"></script>
 	<script src="/html/script.js"></script>
 </head>
@@ -39,7 +44,10 @@
 				<div class="current_path">Current path: <span class="current_path_text"></span></div>
 				<div class="chat_form_wr">
 					<textarea class="chat_message_input" placeholder="Enter your message here..."></textarea>
-					<button class="submit_btn" type="submit">Send</button>
+					<div class="buttons_wr">
+						<button class="submit_btn" type="submit">Send</button>
+						<button class="record_btn" type="button">●</button>
+					</div>
 				</div>
 				<div class="file_list_popup">
 					<ul>
@@ -143,15 +151,9 @@
 			</label>
 		</div>
 
-<!--		<div class="settings_form_wr">-->
-<!--			<label class="settings_form_gr_wr">-->
-<!--				<div class="label_text">Select API:</div>-->
-<!--				<select class="api_select">-->
-<!--					<option value="openai">OpenAI</option>-->
-<!--					<option value="llamacpp">llama.cpp</option>-->
-<!--				</select>-->
-<!--			</label>-->
-<!--		</div>-->
+		<div class="settings_form_wr">
+			<button class="index_files_btn" type="button">Index files</button>
+		</div>
 
 	</div>
 </div>
