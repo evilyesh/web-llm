@@ -85,12 +85,12 @@ async def r_parse_project_files(request):
 	"""Parse project files and save the parsed data to the database."""
 	data = await request.json()
 	path = data.get('path')
+	exclude_dirs = data.get('exclude_dirs', [])  # Get exclude_dirs from request data
+
 	if not path:
 		return {"error": "Path parameter is required"}, 400
 
-	exclude_dirs = [".venv", "venv", ".git", "__pycache__", ".idea", "structure.py", "llama-cpp-python", "config", "history", "db.db", "lang.py", "test_calc.py", "db.db-journal",
-					"test_style_parse.py", "lib", "description.md", "description_classes.md", "json.json", "project_structure.txt", "README.md", "requirements.txt", "LICENSE", "favicon.ico"]  # temporary TODO remove!!!
-	files = get_project_files(path, exclude_dirs)
+	files = get_project_files(path, exclude_dirs)  # Use exclude_dirs for filtering
 	print(f"Files to parse: {files}")
 
 	files_to_parse, files_content = check_files_for_updates(files, path)

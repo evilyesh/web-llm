@@ -21,9 +21,9 @@ class FilesList {
 		this.pWr = getOneSelector('.p_wr');
 		this.includesPopup = getOneSelector('.includes_popup');
 		this.includesPopup._showed = false;
-		this.includedList = {}; // Changed to object
-		this.excludedList = {}; // Changed to object
-		this.projectRootList = {}; // Changed to object
+		this.includedList = {};
+		this.excludedList = {};
+		this.projectRootList = {};
 
 		this.pWr.addEventListener('keydown', e => {
 			this.handleFileListPopupKeydown(e);
@@ -49,6 +49,9 @@ class FilesList {
 
 	clearFilesList() {
 		this.userFiles = {};
+		this.includedList = {};
+		this.excludedList = {};
+		this.projectRootList = {};
 		getOneSelector('.files_list').innerHTML = '';
 	}
 
@@ -121,7 +124,10 @@ class FilesList {
 	displayFilesList() {
 		this.fileListPopup.innerHTML = '';
 		this.selectedFileIndex = -1;
+		console.log(this.excludedList);
+		this.list = this.list.filter(file => !this.excludedList[file.path]);
 		this.list.forEach(file => {
+			console.log(this.excludedList[file.path]);
 			const div = createEl('div')
 				.addClass(file.type === 'dir' ? 'directory' : 'file')
 				.onClick(() => this.handleFileSelection(file))
@@ -232,17 +238,28 @@ class FilesList {
 			if (!this.includedList[file.path]) {
 				this.includedList[file.path] = file;
 			}
-			if (this.excludedList[file.path]) {
-				delete this.excludedList[file.path];
-			}
+			// if (this.excludedList[file.path]) {
+			// 	delete this.excludedList[file.path];
+			// }
 		} else {
-			if (!this.excludedList[file.path]) {
-				this.excludedList[file.path] = file;
-			}
+			// if (!this.excludedList[file.path]) {
+			// 	this.excludedList[file.path] = file;
+			// }
 			if (this.includedList[file.path]) {
 				delete this.includedList[file.path];
 			}
 		}
+		this.excludeFiles();
+	}
+
+	excludeFiles(){
+		Object.values(this.projectRootList).forEach(file => {
+			if(this.includedList[file.path]){
+				delete this.excludedList[file.path];
+			}else{
+				this.excludedList[file.path] = file;
+			}
+		});
 	}
 
 	closeIncludesPopup() {

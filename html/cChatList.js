@@ -169,7 +169,7 @@ class ChatList {
 
 		this.cRequest.sendRequest('/parseProjectFiles', {
 			path: projectPath,
-			exclude_dirs: []
+			exclude_dirs: this.filesList.excludedList // Ensure excludedList is included here
 		})
 			.then(response => console.log(response))
 			.catch(error => this.handleError(lang.errFc, error));
