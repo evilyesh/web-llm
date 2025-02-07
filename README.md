@@ -14,9 +14,9 @@ cd web-llm
 ```bash
 python3 -m venv venv
 ```
-3. Install Flask: 
+3. Install: 
 ```bash
-pip install flask
+pip install aiohttp sqlite requests tree-sitter
 ```
 4. Start the application: 
 ```bash
@@ -30,7 +30,17 @@ python3 main.py
 ```
 Llama.cpp https://github.com/ggerganov/llama.cpp
 
-6. Open your browser and navigate to [http://127.0.0.1:5001/](http://127.0.0.1:5001/).
+6. You can set additional models in config for thinking model and speach-to-text model whishper:
+```json
+{
+   ...
+   "whisper_address": "http://192.168.1.143:8889/inference",
+   "think_model": "accounts/.../models/DeepSeek-R1-Distill-Qwen-7B",
+   "think_model_address": "http://127.0.0.1:8990/v1/chat/completions"
+}
+```
+
+7. Open your browser and navigate to [http://127.0.0.1:5001/](http://127.0.0.1:5001/).
 
 ### Usage
 
@@ -63,6 +73,7 @@ The response from the model will be displayed in a diff manner with use monaco e
 - This project uses the aiohttp library, which is licensed under the Apache-2.0 license. https://github.com/aio-libs/aiohttp
 - This project uses the sqlite library. https://github.com/sqlite/sqlite
 - This project uses the requests library, which is licensed under the Apache-2.0 license. https://github.com/psf/requests
+- This project uses the tree-sitter library, which is licensed under the MIT license. https://github.com/tree-sitter/tree-sitter
 
 
 - This project uses and contain the part of minified Monaco editor for web browsers, which is licensed under the MIT license. Monaco Editor is included in the project as a local dependency for offline use without the need for an internet connection. https://github.com/microsoft/monaco-editor Copyright (c) Microsoft Corporation. All rights reserved. 
