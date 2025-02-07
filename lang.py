@@ -173,30 +173,28 @@ SYSTEM_DIFF_PROMPT = """
         """
 
 PREFIX = """
-        You are a coding assistant specializing in Python, JavaScript, CSS, HTML, and PHP. 
-        1. **File Naming and Code Formatting**:
+        **Instructions**
+        1. **Problem solving**:
            - First think step-by-step - describe your plan for what to build in pseudocode.
            - Write a short plan for solving the problem
            - Minimize any other prose.
+
+        2. **File Naming and Code Formatting**:
            - Use Markdown formatting in your answers.
            - Always format code using Markdown code blocks, with the programming language specified at the start. 
            - Provide the file path and name followed by the code for that file, wrapped in triple backticks (```).
            - Ensure the file path and name are correctly specified.
-           - Ensure the file path are fully specified.
 
-        2. **File List**:
+        3. **File List**:
            - Below is the list of files and their content. Edit the content as needed.
         """
 
 PREFIX_THINK = """
-        You are a coding assistant specializing in Python, JavaScript, CSS, HTML, and PHP. 
-
         **File List**:
            - Below is the list of files and their content. 
         """
 
 PREFIX_DIFF = """
-        You are a coding assistant specializing in Python, JavaScript, CSS, HTML, and PHP. 
         1. **File Naming and Code Formatting**:
            - Provide code wrapped in triple backticks (```).
            - Ensure the file path and name are correctly specified.
