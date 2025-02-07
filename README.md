@@ -58,6 +58,7 @@ The response from the model will be displayed in a diff manner.
 - [x] make sql query to database.
 - [ ] currently can't edit files with ``` in content
 - [ ] set files encodings
+- [ ] save code blocks
 
 
 - This project uses the jsdiff library, which is licensed under the BSD-3-Clause license. https://github.com/kpdecker/jsdiff

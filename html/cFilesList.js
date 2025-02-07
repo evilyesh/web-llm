@@ -1,9 +1,11 @@
 /**
- * Manages the file list, its display, and interaction with files.
- * Handles file selection, directory navigation, and file list display.
+ * Manages file listing functionality:
+ * - Displays file tree structure
+ * - Handles file selection
+ * - Manages included/excluded files
+ * - Processes directory navigation
  */
 class FilesList {
-	// Constructor to initialize the list of files
 	constructor(chat) {
 		this.chat = chat;
 		this.projectPath = null;
@@ -17,6 +19,11 @@ class FilesList {
 		this.currentPathLabel = getOneSelector('.current_path_text');
 		this.chatMessageInput = getOneSelector('.chat_message_input');
 		this.pWr = getOneSelector('.p_wr');
+		this.includesPopup = getOneSelector('.includes_popup');
+		this.includesPopup._showed = false;
+		this.includedList = {}; // Changed to object
+		this.excludedList = {}; // Changed to object
+		this.projectRootList = {}; // Changed to object
 
 		this.pWr.addEventListener('keydown', e => {
 			this.handleFileListPopupKeydown(e);
@@ -27,46 +34,33 @@ class FilesList {
 				return this._currentPath;
 			},
 			set: function(value) {
-				console.log(value);
 				this._currentPath = value;
 				this.showCurrentPath();
 			}
 		});
 	}
 
-	// Method to set the project path
 	setPath(path) {
-		console.log(path);
 		this.projectPath = path;
-		this.currentPath = path; // Initialize current path to project path
-		this.chat.resetChatData(); // Reset chat data when project path changes
-		this.clearFilesList(); // Clear the files list
-		// this.getFilesList(); // Refresh the file list
+		this.currentPath = path;
+		this.chat.resetChatData();
+		this.clearFilesList();
 	}
 
-	// Method to clear the files list
 	clearFilesList() {
-		this.userFiles = {}; // Clear the userFiles object
-		getOneSelector('.files_list').innerHTML = ''; // Clear the files list in the DOM
+		this.userFiles = {};
+		getOneSelector('.files_list').innerHTML = '';
 	}
 
-	// Updates the current path label with the current path value.
 	showCurrentPath() {
 		this.currentPathLabel.setTEXT(this.currentPath);
 	}
 
-	// Method to add a file to the list
 	addFile(file) {
-		// Calculate the relative path
-		const relativePath = file.path.replace(this.projectPath, '');
-
 		if(this.userFiles[file.path]){
-			console.log(this.list[relativePath]);
 			return;
 		}
-		// Add the file to userFiles for tracking
 		this.userFiles[file.path] = file;
-		// Create file label in the DOM
 		this.createFileLabel(file);
 	}
 
@@ -83,7 +77,6 @@ class FilesList {
 		}
 	}
 
-	// Method to create a file label in the DOM
 	createFileLabel(file) {
 		let dir_section = getOneSelector('.files_list .files_dir[data-dir_path="' + file.relative_path.replace(file.name, '') + '"]');
 		if (!dir_section) {
@@ -104,7 +97,6 @@ class FilesList {
 		dir_section.appendChild(fileLabel);
 	}
 
-	// Method to remove a file label from the DOM
 	removeFileFromUserFiles(file) {
 		const file_element = getOneSelector('.files_list .file_label[data-id="' + file.path + '"]');
 		const files_dir_wrapper = getOneSelector('.files_list .files_dir[data-dir_path="' + file.relative_path.replace(file.name, '') + '"]');
@@ -115,7 +107,6 @@ class FilesList {
 		delete this.userFiles[file.path];
 	}
 
-	// Method to get files list from the server
 	getFilesList() {
 		this.cRequest.sendRequest('/getFilesList', {
 			current_path: this.currentPath,
@@ -127,7 +118,6 @@ class FilesList {
 			});
 	}
 
-	// Method to display files list in the popup
 	displayFilesList() {
 		this.fileListPopup.innerHTML = '';
 		this.selectedFileIndex = -1;
@@ -169,7 +159,6 @@ class FilesList {
 		}
 	}
 
-	// Method to handle file selection
 	handleFileSelection(file) {
 		if (file.type === 'dir') {
 			this.currentPath = file.path;
@@ -179,19 +168,107 @@ class FilesList {
 			this.addFile(file);
 			this.closeFileListPopup();
 			this.chatMessageInput.value = this.chatMessageInput.value.replace('./', file.name);
-			this.chatMessageInput.focus();
+			this.selectText(this.chatMessageInput, file.name)
 		}
 	}
 
-	// Method to close file list popup
 	closeFileListPopup() {
 		this.fileListPopup.style.display = 'none';
 		this.fileListPopup._showed = false;
 	}
 
-	// Method to show file list popup
 	showFileListPopup() {
 		this.fileListPopup.style.display = 'block';
 		this.fileListPopup._showed = true;
+	}
+
+	selectText(textareaElement, textToSelect) {
+		const text = textareaElement.value;
+		const startIndex = text.indexOf(textToSelect);
+
+		if (startIndex !== -1) {
+			const endIndex = startIndex + textToSelect.length;
+			textareaElement.focus();
+			textareaElement.setSelectionRange(startIndex, endIndex);
+		}
+	}
+
+	loadIncludesPopup() {
+		this.cRequest.sendRequest('/getFilesList', {
+			current_path: this.projectPath,
+			project_path: this.projectPath
+		}, true)
+			.then(files => {
+				this.updateProjectRootList(files);
+				const includes_list = this.includesPopup.getOneSelector('.includes_list');
+				includes_list.innerHTML = '';
+				for (const path in this.projectRootList) {
+					const file = this.projectRootList[path];
+					const div = createEl('div').appendTo(includes_list);
+
+					const checkbox = createEl('input')
+						.addData('path', file.path);
+					checkbox.type = 'checkbox';
+					checkbox.storedObjectFile = file;
+
+					if(this.includedList[file.path]){
+						checkbox.checked = true;
+					}
+
+					checkbox.addEventListener('change', () => this.handleCheckboxChange(checkbox, file));
+
+					const label = createEl('label')
+						.addClass(file.type === 'dir' ? 'directory' : 'file')
+						.setTEXT(file.name)
+						.appendTo(div);
+					label.prepend(checkbox);
+				}
+				this.showIncludesPopup();
+			});
+	}
+
+	handleCheckboxChange(checkbox, file) {
+		if (checkbox.checked) {
+			if (!this.includedList[file.path]) {
+				this.includedList[file.path] = file;
+			}
+			if (this.excludedList[file.path]) {
+				delete this.excludedList[file.path];
+			}
+		} else {
+			if (!this.excludedList[file.path]) {
+				this.excludedList[file.path] = file;
+			}
+			if (this.includedList[file.path]) {
+				delete this.includedList[file.path];
+			}
+		}
+	}
+
+	closeIncludesPopup() {
+		this.includesPopup.style.display = 'none';
+		this.includesPopup._showed = false;
+	}
+
+	showIncludesPopup() {
+		this.includesPopup.style.display = 'block';
+		this.includesPopup._showed = true;
+	}
+
+	updateProjectRootList(files) {
+		const newFilesSet = new Set(files.map(file => file.path));
+		const currentFilesSet = new Set(Object.keys(this.projectRootList));
+
+		files.forEach(file => {
+			if (!currentFilesSet.has(file.path)) {
+				this.projectRootList[file.path] = file;
+			}
+		});
+
+		for (const path in this.projectRootList) {
+			if (!newFilesSet.has(path)) {
+				delete this.projectRootList[path];
+			}
+		}
 	}
 }

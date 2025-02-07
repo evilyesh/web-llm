@@ -1,14 +1,13 @@
+/**
+ * Utility functions collection:
+ * - DOM manipulation helpers
+ * - String manipulation functions
+ * - Helper functions for various components
+ */
 const oPb = {
-    docReady(cb) {
+	docReady(cb) {
 		if (document.readyState !== 'loading') cb();
 		else document.addEventListener('DOMContentLoaded', cb);
-	},
-	lazyResize(cb) {
-		let t = 0;
-		window.addEventListener('resize', () => {
-			clearTimeout(t);
-			t = setTimeout(cb, 100);
-		});
 	},
 	showSmMsg(msg, cls, dur = 1000) {
 		let b = document.querySelector('.pb_smmsg_b') || createEl('div').addClass('pb_smmsg_b').appendTo(document.body);
@@ -20,16 +19,6 @@ const oPb = {
 		}
 		return false;
 	},
-	createPopup(el) {
-		let pb = createEl('div').addClass('pop_block').setId('pop_block');
-		let pw = createEl('div').addClass('pop_wrapper');
-		let pbdy = createEl('div').addClass('pop_body').append(el);
-		let cb = createEl('span').addClass('form_close_btn catalog_close_btn').setHTML('&times;').onClick(() => {
-			pb.remove();
-			document.body.removeClass('noscroll');
-		});
-		return pb.append(cb, pw.append(pbdy));
-	}
 };
 
 Number.isFinite = Number.isFinite || function(v) { return typeof v === 'number' && isFinite(v); };
@@ -85,21 +74,21 @@ function createEl(t) { return document.createElement(t); }
 function getById(id) { return document.getElementById(id); }
 
 function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+	return unsafe
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
 }
 
 function unescapeHtml(safe) {
-    return safe
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'");
+	return safe
+		.replace(/&/g, "&")
+		.replace(/</g, "<")
+		.replace(/>/g, ">")
+		.replace(/"/g, '"')
+		.replace(/'/g, "'");
 }
 
 function simpleHash(str) {
@@ -114,7 +103,7 @@ function simpleHash(str) {
 }
 
 function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function replaceFourSpacesWithTab(text) {
@@ -136,4 +125,47 @@ function nl2br(str) {
 function createShortString(longString) {
 	if (longString.length <= 20) return longString;
 	return '...' + longString.substring(longString.length - 20);
+}
+
+function escapeAndFormatContent(content) {
+	return nl2br(escapeHtml(content));
+}
+
+function splitTextInHtml(escaped_text, known_keys, unknown_keys) {
+	const ar_text = splitByDelimiters(escaped_text, [...known_keys, ...unknown_keys]);
+	const html = createEl('div').addClass('message_g_wrapper');
+	ar_text.forEach(block => {
+		const message_block = createEl('div').addClass('message_block');
+		if(known_keys.includes(block)){
+			message_block.id = block;
+		}else if(unknown_keys.includes(block)){
+			message_block.id = block;
+		}else{
+			message_block.innerHTML = block;
+		}
+		html.append(message_block)
+	});
+
+	return html;
+}
+
+function splitByDelimiters(text, delimiters) {
+	if(!delimiters.length) return [text];
+
+	const escaped = delimiters.map(d =>
+		d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	);
+	escaped.sort((a, b) => b.length - a.length);
+	const pattern = new RegExp(`(${escaped.join('|')})`, 'g');
+
+	return text.split(pattern).filter(part => part !== '');
+}
+
+function removeMarkdownAndCodeLanguage(text) {
+	text = text.replace(/^```\w+.*\n/gm, '');
+
+	text = text.replace(/^`{3}/gm, '');
+	text = text.replace(/`{3}$/gm, '');
+
+	return text.trim();
 }

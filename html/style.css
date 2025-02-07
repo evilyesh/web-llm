@@ -36,6 +36,11 @@ pre {
 	margin-bottom:10px;
 }
 
+.chat_path label{
+	display: flex;
+	flex-wrap: nowrap;
+}
+
 .chat_path_input{
 	width:100%;
 }
@@ -84,6 +89,7 @@ button:focus {
 input:active,
 textarea:active,
 button:active,
+.save_as:active,
 .confirm.active {
 	background: #6272a4;
 }
@@ -114,7 +120,7 @@ button:active,
 }
 
 .chat_container {
-	height: 72vh;
+	height: 80vh;
 	display: flex;
 	flex-direction: column-reverse;
 }
@@ -356,14 +362,14 @@ button:active,
 	cursor: pointer;
 }
 
-.one_message, .user_msg, .model_format_err, .user_message, .model_responce {
+.one_message, .user_msg, .model_format_err, .user_message, .model_response {
 	margin-bottom: 10px;
 	border-radius: 10px;
-	padding: 10px;
+	padding: 15px;
 	border: 1px solid #6272a4;
 }
 
-.model_responce{
+.model_response{
 	border: 2px solid #6272a4;
 }
 
@@ -388,6 +394,8 @@ pre {
 .code_wrap {
 	border-bottom: 1px solid #6272a4;
 	padding: 10px 0;
+	height: 60vh;
+	min-height: 850px;
 }
 
 /**** msg styles ****/
@@ -523,6 +531,55 @@ pre {
 	background-color: #cfe078;
 }
 
+.include_files_btn {
+	background: #6272a4;
+	color: #f8f8f2;
+	border: none;
+	border-radius: 4px;
+	padding: 5px 10px;
+	font-family: 'Fira Code', monospace;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.include_files_btn:hover {
+	background: #50525b;
+}
+
+.includes_popup {
+	position: fixed;
+	bottom: 20px;
+	left: 20px;
+	background: #282a36;
+	padding: 20px;
+	border-radius: 4px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	display: none;
+	z-index: 1001;
+	width: 25%;
+	max-height: calc(100vh - 60px); /* Set max height to window height */
+}
+
+.includes_popup_content {
+	position: relative;
+	overflow-y: auto; /* Enable vertical scroll if content overflows */
+}
+
+.includes_popup_content .header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 5px;
+	line-height:18px;
+}
+
+.includes_list {
+	display: flex;
+	flex-direction: column;
+	padding: 0 15px;
+	gap: 5px;
+}
+
 @media (min-width: 768px) {
 	.p_wr {
 		flex-direction: row;
@@ -551,7 +608,7 @@ pre {
 	}
 
 	.chat_form textarea.chat_message_input {
-		height: 20vh;
+		height: 12vh;
 	}
 
 	.files_dir {

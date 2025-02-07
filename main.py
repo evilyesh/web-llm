@@ -1,233 +1,125 @@
-from flask import Flask, send_from_directory, request, jsonify
-import json
+from aiohttp import web
 from settings import Settings
-from ext import get_files_list, get_files_content, send_prompt, send_edit_prompt, save_file, save_settings, run_sql_query, get_settings_list, set_selected_settings, record_audio, get_project_files, index_files_in_db, check_files_for_updates, db
+from ext import get_files_list, get_files_content, save_file, save_settings, get_settings_list, set_selected_settings, record_audio, get_project_files, check_files_for_updates, db, prepare_send_prompt, send_edit_prompt
 from tree_sitter_t import parse_file_to_db
+import os
 
 # Initialize settings
 settings = Settings(file_path='settings.json')
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize aiohttp app
+app = web.Application()
 
-@app.route('/')
-def r_home():
+async def error_handling_middleware(app, handler):
+	async def middleware_handler(request):
+		try:
+			response = await handler(request)
+			if isinstance(response, web.FileResponse):
+				return response
+			if isinstance(response, dict) or isinstance(response, list):
+				return web.json_response(response, status=200)
+			return web.Response(text=str(response), status=200)
+		except Exception as e:
+			print(e)
+			return web.json_response({"error": str(e)}, status=500)
+	return middleware_handler
+
+app.middlewares.append(error_handling_middleware)
+
+async def r_home(request):
 	"""Serve the home page."""
-	return send_from_directory('html', 'index.html')
+	return web.FileResponse('html/index.html')
 
-@app.route('/favicon.ico')
-def r_favicon():
+async def r_favicon(request):
 	"""Serve the favicon."""
-	return send_from_directory('html', 'favicon.ico')
+	return web.FileResponse('html/favicon.ico')
 
-
-@app.route('/html/<path:filename>')
-def r_static_files(filename):
-	"""Serve static files from the 'html' directory."""
-	return send_from_directory('html', filename)
-
-
-@app.route('/getFilesList', methods=['POST'])
-def r_get_files():
+async def r_get_files(request):
 	"""Return a list of files and directories in the specified path."""
-	try:
-		data = request.json
-		files_list, status_code = get_files_list(data)
-		return jsonify(files_list), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return get_files_list(data)
 
-@app.route('/getSettings', methods=['POST'])
-def r_get_settings():
-	"""Return the current settings."""
-	return jsonify({
-		"prefix": settings.prefix,
-		"postfix": settings.postfix,
-		"prefix_diff": settings.prefix_diff,
-		"postfix_diff": settings.postfix_diff,
-		"prompt_prefix": settings.prompt_prefix
-	}), 200
-
-@app.route('/getFilesContent', methods=['POST'])
-def r_get_files_content():
+async def r_get_files_content(request):
 	"""Return the content of specified files."""
-	try:
-		data = request.json
-		files_content, status_code = get_files_content(data)
-		return jsonify(files_content), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return get_files_content(data)
 
-@app.route('/sendPrompt', methods=['POST'])
-def r_send_prompt():
+async def r_send_prompt(request):
 	"""Send a prompt to the model and return the response."""
-	try:
-		data = request.json
-		response, status_code = send_prompt(data, settings)
-		return jsonify(response), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return prepare_send_prompt(data, settings)
 
-@app.route('/sendEditPrompt', methods=['POST'])
-def r_send_edit_prompt():
+async def r_send_edit_prompt(request):
 	"""Send an edit prompt to the model and return the response."""
-	try:
-		data = request.json
-		response, status_code = send_edit_prompt(data, settings)
-		return jsonify(response), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return send_edit_prompt(data, settings)
 
-@app.route('/saveFileContent', methods=['POST'])
-def r_save_file():
+async def r_save_file(request):
 	"""Save the content of a file."""
-	try:
-		data = request.json
-		response, status_code = save_file(data)
-		return jsonify(response), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return save_file(data)
 
-@app.route('/saveSettings', methods=['POST'])
-def r_save_settings():
+async def r_save_settings(request):
 	"""Save the current settings."""
-	try:
-		data = request.json
-		response, status_code = save_settings(data, settings)
-		return jsonify(response), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return save_settings(data, settings)
 
-@app.route('/runSQLQuery', methods=['POST'])
-def r_run_sql_query():
-	"""Execute a SQL query and return the results."""
-	try:
-		data = request.json
-		response, status_code = run_sql_query(data)
-		return jsonify(response), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
-
-@app.route('/getSettingsList', methods=['POST'])
-def r_get_settings_list():
+async def r_get_settings_list(request):
 	"""Return a list of available settings files."""
-	try:
-		settings_list, status_code = get_settings_list()
-		return jsonify(settings_list), status_code
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	return get_settings_list()
 
-@app.route('/setSelectedSettings', methods=['POST'])
-def r_set_selected_settings():
+async def r_set_selected_settings(request):
 	"""Set the selected settings file."""
-	try:
-		data = request.json
-		response, status_code = set_selected_settings(data, settings)
-		return jsonify(response), status_code
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	data = await request.json()
+	return set_selected_settings(data, settings)
 
-@app.route('/recordAudio', methods=['POST'])
-def r_record_audio():
+async def r_record_audio(request):
 	"""Receive audio file, send to Whisper LLM, and return transcription."""
-	try:
-		files = {'file': request.files['audio']}
-		response, status_code = record_audio(files, settings)
-		return jsonify(response), status_code
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	reader = await request.multipart()
+	field = await reader.next()
+	assert field.name == 'audio'
+	audio_data = await field.read()
+	return record_audio({'file': audio_data}, settings)
 
-@app.route('/getProjectFiles', methods=['POST'])
-def r_get_project_files():
-	"""Return a list of absolute paths of all files in the project directory that are not excluded."""
-	try:
-		data = request.json
-		path = data.get('path')
-		print(data)
-		exclude_dirs = [".venv", "venv", ".git", "__pycache__", ".idea", "structure.py", "llama-cpp-python", "config", "history", "db.db", "lang.py", "test_calc.py", "db.db-journal",
-						"test_style_parse.py", "lib", "description.md", "description_classes.md", "json.json", "project_structure.txt", "README.md", "requirements.txt", "LICENSE"]  # temporary TODO remove!!!
-		files = get_project_files(path, exclude_dirs)
-		print(files)
-		files_to_parse, files_content, status_code = check_files_for_updates(files, path)
-		# If we find changed files we must remove corresponding code from db
-		if files_to_parse:
-			for file_path in files_to_parse:
-				db.delete_record_by_path(file_path)
-		index_files_in_db(files_content, settings)
-		return jsonify(files), 200
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
-
-@app.route('/parseProjectFiles', methods=['POST'])
-def r_parse_project_files():
+async def r_parse_project_files(request):
 	"""Parse project files and save the parsed data to the database."""
-	try:
-		data = request.json
-		path = data.get('path')
-		if not path:
-			return jsonify({"error": "Path parameter is required"}), 400
+	data = await request.json()
+	path = data.get('path')
+	if not path:
+		return {"error": "Path parameter is required"}, 400
 
-		exclude_dirs = [".venv", "venv", ".git", "__pycache__", ".idea", "structure.py", "llama-cpp-python", "config", "history", "db.db", "lang.py", "test_calc.py", "db.db-journal",
-						"test_style_parse.py", "lib", "description.md", "description_classes.md", "json.json", "project_structure.txt", "README.md", "requirements.txt", "LICENSE"]  # temporary TODO remove!!!
-		files = get_project_files(path, exclude_dirs)
-		print(f"Files to parse: {files}")
+	exclude_dirs = [".venv", "venv", ".git", "__pycache__", ".idea", "structure.py", "llama-cpp-python", "config", "history", "db.db", "lang.py", "test_calc.py", "db.db-journal",
+					"test_style_parse.py", "lib", "description.md", "description_classes.md", "json.json", "project_structure.txt", "README.md", "requirements.txt", "LICENSE", "favicon.ico"]  # temporary TODO remove!!!
+	files = get_project_files(path, exclude_dirs)
+	print(f"Files to parse: {files}")
 
-		files_to_parse, files_content, status_code = check_files_for_updates(files, path)
-		# If we find changed files we must remove corresponding code from db
-		if files_to_parse:
-			for file_path in files_to_parse:
-				db.delete_record_by_path(file_path)
-
+	files_to_parse, files_content = check_files_for_updates(files, path)
+	if files_to_parse:
 		for file_path in files_to_parse:
-			if file_path.endswith(('.py', '.js', '.php')):
-				parse_file_to_db(file_path)
+			db.delete_record_by_path(file_path)
 
-		return jsonify({"message": "Files parsed and saved to database successfully"}), 200
-	except json.JSONDecodeError as e:
-		print(f"JSONDecodeError: {e}")
-		return jsonify({"error": "Invalid JSON"}), 400
-	except Exception as e:
-		print(f"Exception: {e}")
-		return jsonify({"error": str(e)}), 500
+	for file_path in files_to_parse:
+		if file_path.endswith(('.py', '.js', '.php')):
+			print(file_path)
+			parse_file_to_db(file_path, settings)
 
+	return {"message": "Files parsed and saved to database successfully"}
 
-if __name__ == '__main__':
-	app.run(debug=False, port=5001)
+app.router.add_static(prefix='/html/', path=os.path.join(os.getcwd(), 'html/'), name='html')
+
+# Add routes
+app.router.add_get('/', r_home)
+app.router.add_get('/favicon.ico', r_favicon)
+app.router.add_post('/getFilesList', r_get_files)
+app.router.add_post('/getFilesContent', r_get_files_content)
+app.router.add_post('/sendPrompt', r_send_prompt)
+app.router.add_post('/sendImprovePrompt', r_send_edit_prompt)
+app.router.add_post('/saveFileContent', r_save_file)
+app.router.add_post('/saveSettings', r_save_settings)
+app.router.add_post('/getSettingsList', r_get_settings_list)
+app.router.add_post('/setSelectedSettings', r_set_selected_settings)
+app.router.add_post('/recordAudio', r_record_audio)
+app.router.add_post('/parseProjectFiles', r_parse_project_files)
+
+if __name__ == "__main__":
+	web.run_app(app, port=5002)

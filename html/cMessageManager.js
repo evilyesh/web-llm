@@ -1,0 +1,1 @@
+// Removed cMessageManager.js as its functionality is now handled by CRequest and ChatList

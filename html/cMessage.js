@@ -1,6 +1,8 @@
 /**
- * Creates and manages chat messages.
- * Handles message HTML generation, file processing, and user interaction.
+ * Manages chat messages and their content:
+ * - Creates message objects
+ * - Parses server responses
+ * - Renders messages in chat interface
  */
 class Message {
 	constructor(id = null, {
@@ -9,7 +11,6 @@ class Message {
 		author = null,
 		chat = null,
 		clearContext = false,
-		useDiff = false,
 		autoAnswer = false,
 		type = 'string' // prompt_w_files - prompt with files list, prompt_improve - text to improve prompt, string - text message, sql_query - message with formatted json with array or object, model_format_err - model not follow format
 	} = {}) {
@@ -20,7 +21,6 @@ class Message {
 		this.html = null; // DOM element representation of the message - string
 		this.chat = chat; // parent chat class - Chat
 		this.clearContext = clearContext; // clear context
-		this.useDiff = useDiff; // use diff
 		this.autoAnswer = autoAnswer; //if model not following format we can auto answer
 		this.notFollowFormat = null; //if model not following format mark this
 		this.type = type;
@@ -28,98 +28,74 @@ class Message {
 		this.constructMessageHtml();
 	}
 
-	static escapeAndFormatContent(content) {
-		return nl2br(escapeHtml(content));
-	}
-
 	constructMessageHtml() {
+		const escaped_text = escapeAndFormatContent(this.data.parsedResponse);
+		const escaped_html = splitTextInHtml(escaped_text, Object.keys(this.data.parsedData), Object.keys(this.data.unknownData));
+
 		this.html = createEl('div').addClass(this.className);
-		let content = Message.escapeAndFormatContent(this.data.parsedResponse);
+		this.html.append(escaped_html);
 
-		if (this.data.type === 'array') {
-			content = Message.showArrayOrObject(content);
-		}
-
-		if (this.data.type === 'prompt') {
-
-			if (Object.entries(this.data.userFiles).length > 0) { // if there are files
-				content = this.replaceParsedData(content);
-
-				// possibly, we need show the message with warning
-				if (Object.entries(this.data.parsedData).length !== Object.entries(this.data.userFiles).length) {
-					this.notFollowFormat = true; // possibly not follow format or make editings in only necessary files
-				}
-			}
-
-			if (Object.entries(this.data.unknownData).length) { // if there are unknown data, it can be from model or user
-
-				content = this.replaceUnknownResponse(content);
-				//TODO actions for save parsed code
-			}
-		}
-
-		this.html.innerHTML = content;
-		this.attachDataEventListeners();
-	}
-
-	attachDataEventListeners() {
-		console.log('this.type');
-		console.log(this.type);
-		if (this.type === 'prompt_w_files') {
-			this.html.getManySelector('.removed').forEach(i => {
-				i.addEventListener('click', () => i.removeClass('removed'));
-			});
-			this.html.getManySelector('.added').forEach(i => {
-				i.addEventListener('click', () => i.remove());
-			});
-			this.html.getManySelector('.confirm').forEach(btn => {
-				btn.addEventListener('click', () => this.chat.handleConfirmClick(btn, this.data));
-			});
-			this.html.getManySelector('.cancel').forEach(btn => {
-				btn.addEventListener('click', () => this.chat.handleCancelClick(btn, this.data));
-			});
-		}
-
-		if (this.type === 'prompt_improve') {
-			const copyButton = createEl('button').addClass('copy_button').setHTML('📋');
-			const textContent = this.html.textContent;
-			copyButton.addEventListener('click', () => {
-				// Append the text content of the .model_responce element to the chat message input
-				this.chat.chatMessageInput.value += textContent;
-			});
-			this.html.appendChild(copyButton);
-		}
-
-		if (this.type === 'model_format_err') {
-			this.html.addEventListener('click', () => {
-				this.chat.requestData.sendPrompt(lang.modelFormatFollow, this.clearContext, this.useDiff, this.autoAnswer, 'prompt_w_files')  // TODO think how put type from parent request
-					.then(response => {
-						//do nothing, think about TODO
-					});
-			});
-		}
-
-		if (this.type === 'sql_query') {
-			//draft TODO
+		if (this.data.type === 'prompt' && Object.entries(this.data.userFiles).length > 0 && Object.entries(this.data.parsedData).length !== Object.entries(this.data.userFiles).length) {
+			this.notFollowFormat = true; // possibly not follow format or make editings in only necessary files
 		}
 	}
 
-	replaceParsedData(content) {
+	replaceParsedData() {
 		for (const hash in this.data.parsedData) {
-			const diff = this.renderDiff(
+			const message_block = this.html.getOneSelector(`#${hash}`);
+			const code_wrap = createEl('div').addClass('code_wrap');
+			code_wrap.id = `cw-${hash}`;
+			const file_name = createEl('div').addClass('file_name').setTEXT(this.data.parsedData[hash].file.relative_path);
+			const confirm_btn = createEl('button').addClass('confirm').addData('id', `cw-${hash}`).setTEXT('Confirm');
+			const cancel_btn = createEl('button').addClass('cancel').addData('id', `cw-${hash}`).setTEXT('Remove editor');
+
+			message_block.append(file_name);
+			message_block.append(code_wrap);
+			message_block.append(confirm_btn);
+			message_block.append(cancel_btn);
+
+			const redactor = this.renderDiff(
 				replaceFourSpacesWithTab(this.data.parsedData[hash].file.content || ''),
-				replaceFourSpacesWithTab(this.data.parsedData[hash].file.data)
+				removeMarkdownAndCodeLanguage(replaceFourSpacesWithTab(this.data.parsedData[hash].file.data)),
+				code_wrap,
+				this.data.parsedData[hash].file.code_type || 'plaintext'
 			);
-			content = content.replace(hash, `
-				<div class="file_name">${this.data.parsedData[hash].file.relative_path}:</div>
-				<div class="code_wrap" id="${hash}">
-					<pre><code>${replaceTabWithFourSpaces(diff.final_html)}</code></pre>
-					<button class="confirm" data-id="${hash}">Confirm</button>
-					<button class="cancel">Cancel</button>
-				</div>
-			`);
+
+			const modifiedModel = redactor.getModel().modified;
+			confirm_btn.onClick(e => {
+				this.chat.handleConfirmClick(confirm_btn, this.data.parsedData[hash].file, modifiedModel.getValue())
+			});
+			cancel_btn.onClick(e => {
+				this.chat.handleCancelClick(cancel_btn, redactor, `cw-${hash}`, this.data.parsedData, hash)
+			});
 		}
-		return content;
+	}
+
+	replaceUnknownData() {
+		for (const hash in this.data.unknownData) {
+			const message_block = this.html.getOneSelector(`#${hash}`);
+			const code_wrap = createEl('div').addClass('code_wrap');
+			code_wrap.id = `cw-${hash}`;
+			const save_as = createEl('button').addClass('save_as').addData('id', `cw-${hash}`).setTEXT('Save as');
+			const cancel_btn = createEl('button').addClass('cancel').addData('id', `cw-${hash}`).setTEXT('Remove editor');
+
+			message_block.append(code_wrap);
+			message_block.append(save_as);
+			message_block.append(cancel_btn);
+
+			const redactor = this.renderEditor(
+				removeMarkdownAndCodeLanguage(replaceFourSpacesWithTab(this.data.unknownData[hash].data || '')),
+				code_wrap
+			);
+
+			cancel_btn.onClick(e => {
+				this.chat.handleCancelClick(cancel_btn, redactor, `cw-${hash}`, {}, hash); // TODO remove from this.data.unknownData
+			});
+
+			save_as.onClick(e => {
+				this.saveEditorDataToFile(redactor.getValue(), `unknown_data_${hash}.txt`);
+			});
+		}
 	}
 
 	static showArrayOrObject(content) {
@@ -132,40 +108,53 @@ class Message {
 		return content;
 	}
 
-	replaceUnknownResponse(content) {
-		for (const hash in this.data.unknownData) {
-			content = content.replace(hash, `
-				<div id="${hash}">
-					<div class="file_name">unknown filename, save it? !TODO!:</div>  <!-- TODO -->
-					<pre><code>${escapeHtml(this.data.unknownData[hash])}</code></pre>
-					<button class="save_as" data-id="${hash}">Save</button>
-					<button class="cancel">Cancel</button>
-				</div>
-			`);
-		}
-		return content;
+	renderDiff(init_text, new_text, element, code_type) {
+
+		const diffEditor = window.monaco.editor.createDiffEditor(element, {
+			originalEditable: false,
+			readOnly: false,
+			theme: 'vs-dark',
+			scrollbar:
+				{
+					alwaysConsumeMouseWheel: false
+				}
+		});
+
+		const originalModel = window.monaco.editor.createModel(init_text, code_type);
+		const modifiedModel = window.monaco.editor.createModel(new_text, code_type);
+
+		diffEditor.setModel({
+			original: originalModel,
+			modified: modifiedModel
+		});
+
+		return diffEditor;
 	}
 
-	renderDiff(init_text, new_text) {
-		let diffs = Diff.diffLines(init_text, new_text);
-		let removed_html = '';
-		let final_html = '';
-
-		diffs.forEach(part => {
-			const escval = escapeHtml(part.value);
-			if (part.added) {
-				final_html += '<span class="added">' + escval + '</span>';
-			} else if (part.removed) {
-				removed_html += '<span class="removed">' + escval + '</span>';
-				final_html += '<span class="removed">' + escval + '</span>';
-			} else {
-				final_html += '<div class="unchainged">' + escval + '</div>';
+	renderEditor(text, element) {
+		// Создаем экземпляр редактора
+		const editor = window.monaco.editor.create(element, {
+			value: text,  // Изначальный текст в редакторе
+			language: 'javascript',  // Язык программирования
+			theme: 'vs-dark',  // Тема редактора
+			readOnly: false,  // Режим только для чтения
+			scrollbar: {
+				alwaysConsumeMouseWheel: false  // Отключение прокрутки колесиком мыши вне области прокрутки
 			}
 		});
 
-		return {
-			removed_html: removed_html,
-			final_html: final_html
-		};
+		return editor;
+	}
+
+	saveEditorDataToFile(content, filename) {
+		const blob = new Blob([content], { type: 'text/plain' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
 	}
 }

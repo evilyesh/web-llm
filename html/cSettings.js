@@ -1,17 +1,17 @@
 /**
- * Manages chat settings.
- * Loads and saves settings, and interacts with the server.
+ * Manages chat settings configuration:
+ * - Loads settings from server
+ * - Saves user preferences
+ * - Handles settings changes
  */
 class CSettings {
-    constructor(chat) {
+	constructor(chat) {
 		this.chat = chat;
 		this.settingsSelect = document.querySelector('.settings_popup .settings_select');
 		this.selectedSettings = null;
 		this.configList = [];
-		this.promptSettings = null;
 		this.cRequest = this.chat.cRequest;
 
-		this.loadPromptSettings();
 		this.loadSettingsList();
 		this.addEventListeners();
 	}
@@ -49,7 +49,6 @@ class CSettings {
 	handleSettingsChange(event) {
 		const selectedFile = event.target.value;
 		this.selectedSettings = this.configList[event.target.selectedIndex];
-		// Add logic to handle the change in the select element
 		this.sendSelectedSettings(selectedFile);
 		console.log('Selected settings file:', selectedFile);
 		console.log('Selected settings:', this.selectedSettings);
@@ -62,16 +61,6 @@ class CSettings {
 			})
 			.catch(error => {
 				console.error('Error sending selected settings:', error);
-			});
-	}
-
-	loadPromptSettings() {
-		this.cRequest.sendRequest('/getSettings', null, true)
-			.then(data => {
-				this.promptSettings = data;
-			})
-			.catch(error => {
-				console.error('Error loading prompt settings:', error);
 			});
 	}
 }

@@ -14,7 +14,12 @@ const lang = {
     noTextSelected: 'No text for send... inter prompt.',
     modelFormatFollow: 'please repeat with files names formated how i ask in instruction',
     requestInProgress: 'Request in progress',
-    noQueryProvided: 'No query provided'
+    noQueryProvided: 'No query provided',
+    noPathProvided: 'No path provided'
 };
 
-const pattern = '([\\s\\S]*?)\\`{3}.*?\\n([\\s\\S]*?)\\`{3}';
+// const pattern = '([\\s\\S]*?)\\<<<START_FILE>>>`{3}.*?\\n([\\s\\S]*?)\\`{3}<<<END_FILE>>>';
+// const unknown_pattern = '<<<START_FILE>>>`{3}(\\w*)\\n([\\s\\S]*?)`{3}<<<END_FILE>>>';
+
+const pattern = '([\\s\\S]*?)<<<START_FILE>>>.*?\\n([\\s\\S]*?)<<<END_FILE>>>';
+const unknown_pattern = '<<<START_FILE>>>(\\w*)\\n([\\s\\S]*?)<<<END_FILE>>>';

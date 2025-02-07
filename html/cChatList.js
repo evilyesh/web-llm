@@ -1,32 +1,27 @@
 /**
- * The main class that manages the chat logic.
- * Handles message handling, responses, file interactions, and settings.
+ * Main chat list class that handles:
+ * - Message management
+ * - File list operations
+ * - Chat settings and configuration
  */
 class ChatList {
 	constructor() {
 		this.messages = [];
-		this.chatContent = getOneSelector('.chat_content');
-		this.chatMessageInput = getOneSelector('.chat_message_input');
-		this.chatPathInput = getOneSelector('.chat_path_input');
-		this.settingsButton = getOneSelector('.settings_button');
-		this.settingsPopup = getOneSelector('.settings_popup');
-		this.closeButton = getOneSelector('.close_button');
-		this.submitBtn = getOneSelector('.submit_btn');
-		this.prefixText = getOneSelector('.prefix_text');
-		this.clearContext = getOneSelector('.clear_context');
-		this.autoAnswer = getOneSelector('.auto_answer');
-		this.improvePrompt = getOneSelector('.edit_button');
-		this.useDiff = getOneSelector('.use_diff');
-		this.pWr = getOneSelector('.p_wr');
-		this.sqlQueryInput = getOneSelector('.sql_query');
-		this.sqlSubmitBtn = getOneSelector('.submit_sql_btn');
-		this.sqlHostInput = getOneSelector('.sql_host');
-		this.sqlPortInput = getOneSelector('.sql_port');
-		this.sqlUsernameInput = getOneSelector('.sql_username');
-		this.sqlPasswordInput = getOneSelector('.sql_password');
-		this.sqlDatabaseInput = getOneSelector('.sql_database');
-		this.recordButton = getOneSelector('.record_btn');
-		this.indexFilesBtn = getOneSelector('.index_files_btn');
+		this.chatContent = document.querySelector('.chat_content');
+		this.chatMessageInput = document.querySelector('.chat_message_input');
+		this.chatPathInput = document.querySelector('.chat_path_input');
+		this.settingsButton = document.querySelector('.settings_button');
+		this.settingsPopup = document.querySelector('.settings_popup');
+		this.closeButton = document.querySelector('#settings_popup .close_button');
+		this.submitBtn = document.querySelector('.submit_btn');
+		this.prefixText = document.querySelector('.prefix_text');
+		this.clearContext = document.querySelector('.clear_context');
+		this.improvePrompt = document.querySelector('.edit_button');
+		this.pWr = document.querySelector('.p_wr');
+		this.recordButton = document.querySelector('.record_btn');
+		this.indexFilesBtn = document.querySelector('.index_files_btn');
+		this.includeFilesBtn = document.querySelector('.include_files_btn');
+		this.includeCloseBtn = document.querySelector('#includes_popup .close_button');
 		this.mediaRecorder = null;
 		this.audioChunks = [];
 		this.requestInProgress = false;
@@ -34,22 +29,20 @@ class ChatList {
 		this.cRequest = new CRequest(this);
 		this.filesList = new FilesList(this);
 		this.settings = new CSettings(this);
-		this.requestData = new RequestData(this);
-		this.messageManager = new MessageManager(this);
 		this.userInputHandler = new UserInputHandler(this);
-		this.requestManager = new RequestManager(this);
 		this.recordingManager = new RecordingManager(this);
+		// this.includeProjectStructure = document.querySelector('.include_project_structure');
+		this.useDescriptions = document.querySelector('.use_descriptions');
+		this.preparePlan = document.querySelector('.prepare_plan');
 
-		window.addEventListener('error', e => {
-			this.handleError(lang.errMsg, e);
-		});
+		window.addEventListener('error', e => this.handleError(lang.errMsg, e));
 
 		this.userInputHandler.setupEventListeners();
 	}
 
 	scrollToMessage(mesEl) {
 		if (mesEl) {
-			mesEl.scrollIntoView({behavior: 'smooth', block: 'start', inline: 'nearest'});
+			mesEl.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
 		}
 	}
 
@@ -59,8 +52,9 @@ class ChatList {
 	}
 
 	handleError(message, error = null) {
-		console.error(message + (error ? error.message : ''));
-		oPb.showSmMsg(lang.errMsg + message + (error ? error.message : ''), 'error_msg', 5000);
+		const errorMessage = message + (error ? error.message : '');
+		console.error(errorMessage);
+		oPb.showSmMsg(lang.errMsg + errorMessage, 'error_msg', 5000);
 		this.enableChatInput();
 	}
 
@@ -80,117 +74,108 @@ class ChatList {
 		this.submitBtn.disabled = false;
 	}
 
-	handleConfirmClick(btn, response) {
-		btn.addClass('active');
+	handleConfirmClick(btn, file, data) {
+		btn.classList.add('active');
 		const codeWrap = btn.parentElement;
-		const hash = btn.getData('id');
-		const file = response.parsedData[hash].file;
-		const codeBlock = codeWrap.getOneSelector('code');
-		codeBlock.getManySelector('.removed').forEach(i => {
-			i.remove();
-		});
+		const hash = btn.dataset.id;
 		this.cRequest.sendRequest('/saveFileContent', {
 			path: this.filesList.projectPath,
 			file_name: file.name,
 			file_path: file.path,
-			data: replaceTabWithFourSpaces(unescapeHtml(codeBlock.textContent))
+			data: replaceTabWithFourSpaces(unescapeHtml(data))
 		}, true)
 			.then(response => {
 				console.log(response);
-				codeWrap.getOneSelector('.cancel').remove();
 			})
-			.catch(error => {
-				this.handleError(lang.errFc, error);
-			});
+			.catch(error => {this.handleError(lang.errFc, error)});
 	}
 
-	handleCancelClick(btn, response) {
-		const codeWrap = btn.parentElement;
-		const hash = codeWrap.id.substring(1);
+	handleCancelClick(btn, redactor, blockId, data, hash) {
+		const codeWrap = getOneSelector(`#${blockId}`);
 		codeWrap.remove();
-		delete response.parsedData[hash];
+
+		const models = redactor.getModel();
+		const originalModel = models.original;
+		const modifiedModel = models.modified;
+
+		redactor.setModel({
+			original: null,
+			modified: null,
+		});
+
+		if (originalModel) {
+			originalModel.dispose();
+		}
+		if (modifiedModel) {
+			modifiedModel.dispose();
+		}
+
+		redactor.dispose(); // Уничтожаем редактор
+		redactor = null;	// Удаляем ссылку
+		delete data[hash];
 	}
 
-	sendEditMessage() {
-		if (this.chatMessageInput.value) {
-			let filesText = '';
-			Object.values(this.filesList.userFiles).forEach(file => {
-				filesText += `\nFile: ${file.relative_path}`;
-				filesText += `${lang.wrap}${file.content}${lang.wrap}\n`;
-			});
-			console.log(filesText);
-			this.cRequest.sendRequest('/sendEditPrompt', {
-				prompt: this.chatMessageInput.value + '\n' + this.prefixText.value + '\n' + filesText,
-				clear_input: this.clearContext.checked,
-				api: ''
-			})
-				.then(response => {
-					console.log(response);
-					const msg = new Message('mid' + Date.now(), {
-						className: 'model_responce',
-						data: new ResponseData(this, response),
-						author: 'model',
-						chat: this,
-						type: 'prompt_improve'
-					});
-					msg.html.appendTo(this.chatContent);
-					this.messages.push(msg);
-					this.scrollToMessage(msg.html);
-				})
-				.catch(error => {
-					this.handleError(lang.errFc, error);
-				});
-		} else {
+	async sendMessage(promptType = null) {
+		if (!this.chatMessageInput.value) {
 			this.handleError(lang.noTextSelected);
+			return;
 		}
-	}
 
-	executeSQLQuery(query) {
-		if (query) {
-			this.cRequest.sendRequest('/runSQLQuery', {
-				host: this.sqlHostInput.value,
-				port: this.sqlPortInput.value,
-				username: this.sqlUsernameInput.value,
-				password: this.sqlPasswordInput.value,
-				database: this.sqlDatabaseInput.value,
-				query: query
-			})
-				.then(response => {
-					console.log(response);
-					const msg = new Message('mid' + Date.now(), {
-						className: 'model_responce',
-						data: new ResponseData(this, response),
-						author: 'model',
-						chat: this,
-						type: 'sql_query'
-					});
-					msg.html.appendTo(this.chatContent);
-					this.messages.push(msg);
-					this.scrollToMessage(msg.html);
-				})
-				.catch(error => {
-					this.handleError(lang.errFc, error);
+		const msg = new Message('mid' + Date.now(), {
+			className: 'user_message',
+			data: await ResponseData.create(this, { data: this.chatMessageInput.value }),
+			author: 'user',
+			chat: this,
+			type: 'user_message'
+		});
+		msg.html.appendTo(this.chatContent);
+		this.messages.push(msg);
+		this.scrollToMessage(msg.html);
+
+		const promptData = {
+			prompt: `${this.prefixText.value ? this.prefixText.value + '\n\n' : ''}${this.chatMessageInput.value}`,
+			clear_input: this.clearContext.checked,
+			files_list: this.filesList.userFiles,
+			// include_project_structure: this.includeProjectStructure.checked,
+			use_descriptions: this.useDescriptions.checked,
+			prepare_plan: this.preparePlan.checked
+		};
+
+		this.cRequest.sendRequest(promptType === 'prompt_improve' ? '/sendImprovePrompt' : '/sendPrompt', promptData)
+			.then(async response => {
+				const msg = new Message('mid' + Date.now(), {
+					className: 'model_response',
+					data: await ResponseData.create(this, response),
+					author: 'model',
+					chat: this,
+					type: promptType || 'prompt_w_files'
 				});
-		} else {
-			this.handleError(lang.noQueryProvided);
-		}
+				msg.html.appendTo(this.chatContent);
+				msg.replaceParsedData();
+				msg.replaceUnknownData();
+				this.messages.push(msg);
+				this.chatMessageInput.value = '';
+				this.scrollToMessage(msg.html);
+			})
+			.catch(error => this.handleError(lang.errFc, error));
 	}
 
 	indexProjectFiles() {
 		const projectPath = this.chatPathInput.value;
-		if (projectPath) {
-			this.cRequest.sendRequest('/parseProjectFiles', {
-				path: projectPath,
-				exclude_dirs: []
-			})
-				.then(response => {
-					console.log(response);
-				})
-				.catch(error => {
-					this.handleError(lang.errFc, error);
-				});
-		} else {
+		if (!projectPath) {
 			this.handleError(lang.noPathProvided);
+			return;
 		}
+
+		this.cRequest.sendRequest('/parseProjectFiles', {
+			path: projectPath,
+			exclude_dirs: []
+		})
+			.then(response => console.log(response))
+			.catch(error => this.handleError(lang.errFc, error));
+	}
+
+	includeFiles() {
+		this.filesList.loadIncludesPopup();
 	}
 }

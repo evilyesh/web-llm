@@ -1,16 +1,17 @@
 /**
- * Handles HTTP requests to the server.
- * Provides methods for sending requests and processing responses.
+ * Handles HTTP requests to the server:
+ * - Sends POST requests
+ * - Manages loading states
+ * - Processes response errors
  */
 class CRequest {
-	// Constructor to initialize the path property
 	constructor(chat) {
 		this.chat = chat;
 		this.path = '';
 		this.loadingAnimation = document.querySelector('#loading-animation');
+		this.requestInProgress = false;
 	}
 
-	// Method to send a request to the server
 	sendRequest(path, data, hidden = false) {
 		const url = path;
 		const options = {
@@ -21,9 +22,8 @@ class CRequest {
 			body: JSON.stringify(data)
 		};
 
-		// Ensure the loading animation is displayed before the request is sent
 		this.loadingAnimation.style.display = 'block';
-		if(!hidden){
+		if (!hidden) {
 			this.chat.disableChatInput();
 		}
 
@@ -37,21 +37,41 @@ class CRequest {
 				return response.json();
 			})
 			.catch(error => {
-				console.error('There was a problem with the fetch operation:', error);
 				this.loadingAnimation.style.display = 'none';
 				this.chat.requestInProgress = false;
-				if(!hidden) {
+				if (!hidden) {
 					this.chat.enableChatInput();
 				}
-				throw error; // Re-throw the error to be handled by the caller
+				this.chat.handleError('There was a problem with the fetch operation:', error);
 			})
 			.finally(() => {
-				console.log('Request completed ' + path);
 				this.loadingAnimation.style.display = 'none';
 				this.chat.requestInProgress = false;
-				if(!hidden) {
+				if (!hidden) {
 					this.chat.enableChatInput();
 				}
 			});
+	}
+
+	sendRequestIfNotInProgress(requestFunction, messageText = null, className = null) {
+		if (this.chat.requestInProgress) {
+			this.chat.handleError(lang.requestInProgress);
+			return;
+		}
+		this.chat.requestInProgress = true;
+		this.chat.disableChatInput();
+		if (messageText && className) {
+			const msg = new Message('mid' + Date.now(), {
+				className: className,
+				data: ResponseData.create(this.chat, { data: messageText }),
+				author: 'user',
+				chat: this.chat,
+				type: 'user_message'
+			});
+			msg.html.appendTo(this.chat.chatContent);
+			this.chat.messages.push(msg);
+			this.chat.scrollToMessage(msg.html);
+		}
+		requestFunction();
 	}
 }

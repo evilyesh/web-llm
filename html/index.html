@@ -5,19 +5,17 @@
 	<title>web-llm</title>
 	<link rel="stylesheet" href="/html/style.css">
 
+	<script src="/html/lib/monako-editor/node_modules/monaco-editor/min/vs/loader.js"></script>
 	<script src="/html/lib/diff.js"></script>
 	<script src="/html/fn.js"></script>
 	<script src="/html/lang.js"></script>
 	<script src="/html/cRecordingManager.js"></script>
 	<script src="/html/cRequest.js"></script>
-	<script src="/html/cRequestData.js"></script>
-	<script src="/html/cRequestManager.js"></script>
 	<script src="/html/cResponseData.js"></script>
 	<script src="/html/cSettings.js"></script>
 	<script src="/html/cFilesList.js"></script>
 	<script src="/html/cMessage.js"></script>
-	<script src="/html/cMessageManager.js"></script>
-	<script src="/html/cUserInputHandler.js"></script>
+	<script src="/html/cEventsHandler.js"></script>
 	<script src="/html/cChatList.js"></script>
 	<script src="/html/script.js"></script>
 </head>
@@ -84,63 +82,34 @@
 				<input type="checkbox" class="clear_context">
 			</label>
 		</div>
-		<div class="settings_form_wr">
-			<label class="settings_form_gr_wr">
-				<div class="label_text">Use diff</div>
-				<input type="checkbox" class="use_diff">
-			</label>
-		</div>
-		<div class="settings_form_wr">
-			<label class="settings_form_gr_wr">
-				<div class="label_text">Auto answer on wrong format</div>
-				<input type="checkbox" class="auto_answer">
-			</label>
-		</div>
+		<!-- Removed Auto answer on wrong format checkbox -->
 		<div class="settings_form_wr">
 			<label class="settings_form_gr_wr">
 				<div class="label_text">Permanent prefix text:</div>
 				<textarea class="prefix_text" placeholder="Permanent prefix text"></textarea>
 			</label>
 		</div>
-		<h3>SQL Query Settings</h3>
+		<!-- New checkbox for "Include project structure" -->
+		<!--
 		<div class="settings_form_wr">
 			<label class="settings_form_gr_wr">
-				<div class="label_text">Host:</div>
-				<input type="text" class="sql_host" placeholder="Enter host...">
+				<div class="label_text">Include project structure</div>
+				<input type="checkbox" class="include_project_structure">
+			</label>
+		</div>
+		-->
+		<!-- New checkboxes for "Use descriptions" and "Prepare plan" -->
+		<div class="settings_form_wr">
+			<label class="settings_form_gr_wr">
+				<div class="label_text">Use descriptions</div>
+				<input type="checkbox" class="use_descriptions">
 			</label>
 		</div>
 		<div class="settings_form_wr">
 			<label class="settings_form_gr_wr">
-				<div class="label_text">Port:</div>
-				<input type="text" class="sql_port" placeholder="Enter port...">
+				<div class="label_text">Prepare plan</div>
+				<input type="checkbox" class="prepare_plan">
 			</label>
-		</div>
-		<div class="settings_form_wr">
-			<label class="settings_form_gr_wr">
-				<div class="label_text">Username:</div>
-				<input type="text" class="sql_username" placeholder="Enter username...">
-			</label>
-		</div>
-		<div class="settings_form_wr">
-			<label class="settings_form_gr_wr">
-				<div class="label_text">Password:</div>
-				<input type="password" class="sql_password" placeholder="Enter password...">
-			</label>
-		</div>
-		<div class="settings_form_wr">
-			<label class="settings_form_gr_wr">
-				<div class="label_text">Database:</div>
-				<input type="text" class="sql_database" placeholder="Enter database...">
-			</label>
-		</div>
-		<div class="settings_form_wr">
-			<label class="settings_form_gr_wr">
-				<div class="label_text">SQL Query:</div>
-				<textarea class="sql_query" placeholder="Enter SQL query..."></textarea>
-			</label>
-		</div>
-		<div class="settings_form_wr">
-			<button class="submit_sql_btn" type="button">Send SQL Query</button>
 		</div>
 		<div class="settings_form_wr">
 			<label class="settings_form_gr_wr">
@@ -155,6 +124,21 @@
 			<button class="index_files_btn" type="button">Index files</button>
 		</div>
 
+		<div class="settings_form_wr">
+			<button class="include_files_btn" type="button">Include files</button>
+		</div>
+
+	</div>
+</div>
+
+<div id="includes_popup" class="includes_popup">
+	<div class="includes_popup_content">
+		<div class="header">
+			<h3>Include Files</h3><span class="close_button">&times;</span>
+		</div>
+		<div class="includes_list">
+			<!-- Includes list will be populated here -->
+		</div>
 	</div>
 </div>
 
