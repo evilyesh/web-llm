@@ -1,5 +1,5 @@
 **# Project: Interactive Chat with File Management**
-A web app for chatting with a model, managing files, and configuring settings. Built with Flask (Python) and JavaScript.
+A web app for chatting with a model, managing files, and configuring settings. Built with aiohttp (Python) and JavaScript.
 
 ---
 ## Structure
@@ -18,7 +18,7 @@ A web app for chatting with a model, managing files, and configuring settings. B
 - `cChatList.js`: Core chat logic (`ChatList`).
 - `script.js`: Initializes `ChatList`.
 
-### **Python (Flask)**
+### **Python (aiohttp)**
 - `main.py`: Server routes for chat, files, and settings.
 - `settings.py`: Loads/saves configurations.
 - `db.py`: Database interactions.
