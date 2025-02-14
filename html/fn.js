@@ -131,14 +131,16 @@ function escapeAndFormatContent(content) {
 	return nl2br(escapeHtml(content));
 }
 
-function splitTextInHtml(escaped_text, known_keys, unknown_keys) {
-	const ar_text = splitByDelimiters(escaped_text, [...known_keys, ...unknown_keys]);
+function splitTextInHtml(escaped_text, known_keys, unknown_keys, markdown_keys) {
+	const ar_text = splitByDelimiters(escaped_text, [...known_keys, ...unknown_keys, ...markdown_keys]);
 	const html = createEl('div').addClass('message_g_wrapper');
 	ar_text.forEach(block => {
 		const message_block = createEl('div').addClass('message_block');
 		if(known_keys.includes(block)){
 			message_block.id = block;
 		}else if(unknown_keys.includes(block)){
+			message_block.id = block;
+		}else if(markdown_keys.includes(block)){
 			message_block.id = block;
 		}else{
 			message_block.innerHTML = block;

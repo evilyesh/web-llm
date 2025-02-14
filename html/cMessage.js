@@ -30,7 +30,7 @@ class Message {
 
 	constructMessageHtml() {
 		const escaped_text = escapeAndFormatContent(this.data.parsedResponse);
-		const escaped_html = splitTextInHtml(escaped_text, Object.keys(this.data.parsedData), Object.keys(this.data.unknownData));
+		const escaped_html = splitTextInHtml(escaped_text, Object.keys(this.data.parsedData), Object.keys(this.data.unknownData), Object.keys(this.data.codeData));
 
 		this.html = createEl('div').addClass(this.className);
 		this.html.append(escaped_html);
@@ -98,14 +98,22 @@ class Message {
 		}
 	}
 
-	static showArrayOrObject(content) {
-		content = `
-				<div class="code_wrap">
-					<pre><code>${content}</code></pre>
-					<!--<button class="will_be_action_btn">Btn</button>-->
-				</div>
-			`;
-		return content;
+	replaceMarkdownData() {
+		for (const hash in this.data.codeData) {
+			const message_block = this.html.getOneSelector(`#${hash}`);
+			const markdown_wrap = createEl('div').addClass('markdown_wrap');
+			const title_wrap = createEl('div').addClass('title_wrap').setTEXT(this.data.codeData[hash].file_type);
+			const pre_wrap = createEl('pre');
+			const code_wrap = createEl('code').setHTML(this.data.codeData[hash].data);
+			markdown_wrap.id = `cw-${hash}`;
+
+			if(this.data.codeData[hash].file_type){
+				pre_wrap.append(title_wrap);
+			}
+			pre_wrap.append(code_wrap);
+			markdown_wrap.append(pre_wrap);
+			message_block.append(markdown_wrap);
+		}
 	}
 
 	renderDiff(init_text, new_text, element, code_type) {
@@ -132,7 +140,6 @@ class Message {
 	}
 
 	renderEditor(text, element) {
-		// Создаем экземпляр редактора
 		const editor = window.monaco.editor.create(element, {
 			value: text,  // Изначальный текст в редакторе
 			language: 'javascript',  // Язык программирования

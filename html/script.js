@@ -4,11 +4,11 @@
  */
 
 oPb.docReady(() => {
-	require.config({ paths: { 'vs': '/html/lib/monako-editor/node_modules/monaco-editor/min/vs' }});
+	require.config({ paths: { 'vs': '/vendor/microsoft/monako-editor/node_modules/monaco-editor/min/vs' }});
 	require(['vs/editor/editor.main'], () => {
 		window.MonacoEnvironment = {
 			getWorkerUrl: function (moduleId, label) {
-				return `${window.location.origin}/html/lib/monako-editor/node_modules/monaco-editor/min/vs/base/worker/workerMain.js`;
+				return `${window.location.origin}/vendor/microsoft/monako-editor/node_modules/monaco-editor/min/vs/base/worker/workerMain.js`;
 			}
 		};
 		window.monaco = monaco;

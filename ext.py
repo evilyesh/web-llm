@@ -5,8 +5,9 @@ import datetime
 import lang
 from db import Database
 from code_request import process_model_response
-from chat import chat_with_model
+from chat import chat_with_model, log_chatml
 import copy
+import re  # Import regex module
 
 selected_settings = None
 db = Database()
@@ -52,11 +53,6 @@ def _get_files_content(files):
 
 def calculate_total_tokens(messages):
 	return sum(len(message["content"].split()) * 3 for message in messages)
-
-def log_history(prompt, model_response):
-	with open('history/history.txt', 'a') as history_file:
-		timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		history_file.write(f"[{timestamp}]\n<|---###|>\nUser: <|----####|>{prompt}<|####----|>\nModel: <|-----#####|>{model_response}<|#####-----|>\n\n<|###---|>\n")
 
 def save_file(data):
 	path = data.get('path')
@@ -114,7 +110,8 @@ def get_project_files(path, exclude_items=None):
 	def get_files_recursively(current_path):
 		files = []
 		for item in os.scandir(current_path):
-			if item.name not in exclude_items:
+			if os.path.abspath(item.path) not in exclude_items.keys() and not check_binary_extension(item.name):
+				print(item.name)
 				files.extend(get_files_recursively(item.path)) if item.is_dir() else files.append(os.path.abspath(item.path))
 		return files
 
@@ -150,14 +147,12 @@ def prepare_send_prompt(data, settings):
 	analise_task = analise_send_prompt({"prompt": f"{prompt}\n{retrieved_code}", "files_list": files_list}, settings) if prepare_plan else ''
 
 	files_content = _get_files_content(files_list) if files_list else {}
-	print(files_content.items())
-	print(json.dumps(data, indent=4, default=str))
 	additional_prompt = settings.prefix + ''.join(
 		settings.files_content_wrapper.format(file.replace(files_list.get(file, {}).get('project_path'), ''), settings.content_delimiter, content, settings.content_delimiter)
 		for file, content in files_content.items()
 	)
 
-	prompt = f"{additional_prompt}{retrieved_code}{lang.PROMPT_PREFIX}{prompt}\n{analise_task}\n{lang.POSTFIX}"
+	prompt = f"{lang.PROMPT_PREFIX}{prompt}\n{analise_task}\n{additional_prompt}\n{retrieved_code}\n{lang.POSTFIX}"
 
 	payload = settings.get("payload_init")
 
@@ -177,7 +172,9 @@ def prepare_send_prompt(data, settings):
 	model_response = chat_with_model(url, payload, headers)
 	payload["messages"].append({"role": "assistant", "content": model_response})
 
-	return {"error": "", "data": model_response}
+	log_chatml(prompt, model_response)
+
+	return {"error": "", "data": f'{analise_task}\n---\n{model_response}'}
 
 def retrieve_send_prompt(data, settings):
 	system = settings.system  # ?
@@ -228,9 +225,13 @@ def analise_send_prompt(data, settings):
 
 	payload.update(messages)
 	model_response = chat_with_model(url, payload, headers)
-	prompt += '\n\n' + model_response
 
-	return model_response
+	log_chatml(prompt, model_response)
+
+	cleaned_response = clean_think_content(model_response)  # Clean the response
+	prompt += '\n\n' + cleaned_response
+
+	return cleaned_response
 
 def get_short_description(code, settings):
 	url = settings.get("url")
@@ -339,3 +340,41 @@ def get_file_code_type(file_name):
 		'.zig': 'zig'
 	}
 	return code_types.get(extension, 'plaintext')
+
+import os
+
+def check_binary_extension(file_name):
+	# Используем множество для более эффективной проверки
+	binary_extensions = {
+		# Исполняемые файлы
+		'.exe', '.dll', '.so', '.bin', '.app', '.apk', '.jar', '.msi',
+		# Архивы
+		'.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.z', '.iso',
+		# Медиафайлы
+		'.mp3', '.wav', '.flac', '.aac', '.ogg', '.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.mpeg',
+		'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.svg', '.psd', '.raw', '.ico',
+		# Документы (бинарные форматы)
+		'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp',
+		# Базы данных
+		'.db', '.sqlite', '.mdb', '.accdb', '.dbf', '.sql', '.dump',
+		# Виртуальные машины и образы
+		'.vmdk', '.vdi', '.qcow2', '.ova', '.ovf',
+		# Криптографические файлы
+		'.pem', '.key', '.crt', '.cer', '.pfx', '.p12', '.gpg', '.pgp',
+		# Логи и дампы
+		'.log', '.core', '.crash',
+		# Игровые файлы
+		'.pak', '.dat', '.save', '.rom', '.sav',
+		# Файлы прошивок и образов
+		'.img', '.hex', '.fw', '.rom',
+		# Другие бинарные форматы
+		'.dmg', '.pkg', '.deb', '.rpm', '.cab', '.swf', '.fla', '.ps', '.eps',
+	}
+
+	# Получаем расширение файла и приводим его к нижнему регистру
+	extension = os.path.splitext(file_name)[1].lower()
+	return extension in binary_extensions
+
+def clean_think_content(text):
+	pattern = r'<think>(.*?)</think>'
+	return re.sub(pattern, '', text, flags=re.DOTALL)

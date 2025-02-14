@@ -129,6 +129,7 @@ class ChatList {
 			type: 'user_message'
 		});
 		msg.html.appendTo(this.chatContent);
+		msg.replaceMarkdownData();
 		this.messages.push(msg);
 		this.scrollToMessage(msg.html);
 
@@ -153,6 +154,7 @@ class ChatList {
 				msg.html.appendTo(this.chatContent);
 				msg.replaceParsedData();
 				msg.replaceUnknownData();
+				msg.replaceMarkdownData();
 				this.messages.push(msg);
 				this.chatMessageInput.value = '';
 				this.scrollToMessage(msg.html);

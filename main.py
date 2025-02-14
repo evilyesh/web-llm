@@ -85,7 +85,7 @@ async def r_parse_project_files(request):
 	"""Parse project files and save the parsed data to the database."""
 	data = await request.json()
 	path = data.get('path')
-	exclude_dirs = data.get('exclude_dirs', [])  # Get exclude_dirs from request data
+	exclude_dirs = data.get('exclude_dirs', {})  # Get exclude_dirs from request data
 
 	if not path:
 		return {"error": "Path parameter is required"}, 400
@@ -99,13 +99,14 @@ async def r_parse_project_files(request):
 			db.delete_record_by_path(file_path)
 
 	for file_path in files_to_parse:
-		if file_path.endswith(('.py', '.js', '.php')):
+		if file_path.endswith(('.py', '.js', '.php', 'jsx')):
 			print(file_path)
 			parse_file_to_db(file_path, settings)
 
 	return {"message": "Files parsed and saved to database successfully"}
 
 app.router.add_static(prefix='/html/', path=os.path.join(os.getcwd(), 'html/'), name='html')
+app.router.add_static(prefix='/vendor/', path=os.path.join(os.getcwd(), 'vendor/'), name='vendor')
 
 # Add routes
 app.router.add_get('/', r_home)

@@ -22,4 +22,6 @@ const lang = {
 // const unknown_pattern = '<<<START_FILE>>>`{3}(\\w*)\\n([\\s\\S]*?)`{3}<<<END_FILE>>>';
 
 const pattern = '([\\s\\S]*?)<<<START_FILE>>>.*?\\n([\\s\\S]*?)<<<END_FILE>>>';
-const unknown_pattern = '<<<START_FILE>>>(\\w*)\\n([\\s\\S]*?)<<<END_FILE>>>';
+// const unknown_pattern = '<<<START_FILE>>>(\\w*)\\n([\\s\\S]*?)<<<END_FILE>>>';
+const unknown_pattern = /<<<START_FILE>>>(\w*)\n([\s\S]*?)<<<END_FILE>>>/g;
+const markdown_pattern = /```(\w*)\s*\n([\s\S]*?)```/g;

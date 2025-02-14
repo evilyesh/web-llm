@@ -68,7 +68,7 @@ def process_model_response(model_response, db_handler):
     response = []
     for key, data in results.items():
         response.append(
-            f"\n{data['short_description']}"
+            f"\n{data['description']}"
             f"\n"
         )
 

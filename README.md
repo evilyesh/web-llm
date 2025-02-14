@@ -39,8 +39,9 @@ Llama.cpp https://github.com/ggerganov/llama.cpp
    "think_model_address": "http://127.0.0.1:8990/v1/chat/completions"
 }
 ```
+The thinking model is a good help in solving problems. I use Coder-32b for write code and R1-14B for prepare plan.
 
-7. Open your browser and navigate to [http://127.0.0.1:5001/](http://127.0.0.1:5001/).
+7. Open your browser and navigate to [http://127.0.0.1:5002/](http://127.0.0.1:5001/).
 
 ### Usage
 
@@ -74,6 +75,7 @@ The response from the model will be displayed in a diff manner with use monaco e
 - This project uses the sqlite library. https://github.com/sqlite/sqlite
 - This project uses the requests library, which is licensed under the Apache-2.0 license. https://github.com/psf/requests
 - This project uses the tree-sitter library, which is licensed under the MIT license. https://github.com/tree-sitter/tree-sitter
+
 
 
 - This project uses and contain the part of minified Monaco editor for web browsers, which is licensed under the MIT license. Monaco Editor is included in the project as a local dependency for offline use without the need for an internet connection. https://github.com/microsoft/monaco-editor Copyright (c) Microsoft Corporation. All rights reserved. 

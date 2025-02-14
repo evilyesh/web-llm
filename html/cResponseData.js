@@ -11,12 +11,13 @@ class ResponseData {
 		this.userFiles = chat.filesList.userFiles;
 		this.parsedData = {};
 		this.unknownData = {};
+		this.codeData = {};
 		this.parsedResponse = '';
 		this.type = 'prompt';
 
-		(async () => {
-			await this.parseResponse();
-		})();
+		// (async () => {
+		// 	await this.parseResponse();
+		// })();
 	}
 
 	static async create(chat, response) {
@@ -54,21 +55,43 @@ class ResponseData {
 				let match = regex.exec(data);
 
 				if(match){
-					const uuid = '---' + simpleHash(match[2]) + '---';
+					const uuid = '---f' + simpleHash(match[2]) + '---';
 					this.parsedData[uuid] = { file: file, data: match[2] };
 					file.data = match[2];
 					data = data.replace(match[0], uuid);
 				}
 			}
 
-			let unknownMatch;
-			let regex = new RegExp(unknown_pattern, 'g');
-			while ((unknownMatch = regex.exec(data)) !== null) {
-				const fileType = unknownMatch[1] || 'plaintext';
-				const uuid = '---' + simpleHash(unknownMatch[2]) + '---';
-				this.unknownData[uuid] = {file_type: fileType, data: unknownMatch[2]};
-				data = data.replace(unknownMatch[0], uuid);
-			}
+			// let unknownMatch;
+			// let regex = new RegExp(unknown_pattern, 'g');
+			// while ((unknownMatch = regex.exec(data)) !== null) {
+			// 	const fileType = unknownMatch[1] || 'plaintext';
+			// 	const uuid = '---u' + simpleHash(unknownMatch[2]) + '---';
+			// 	this.unknownData[uuid] = {file_type: fileType, data: unknownMatch[2]};
+			// 	data = data.replace(unknownMatch[0], uuid);
+			// }
+
+			data = data.replace(unknown_pattern, (match, codeType, codeContent) => {
+				const uuid = '---u' + simpleHash(codeContent) + '---';
+				this.unknownData[uuid] = { file_type: codeType, data: codeContent.trim() }; // trim() убирает лишние переносы
+				return uuid;
+			});
+
+			// const codePattern = new RegExp(markdown_pattern, 'g');
+			// let codeMatch;
+			// while ((codeMatch = codePattern.exec(data)) !== null) {
+			// 	const codeType = codeMatch[1];
+			// 	const uuid = '---m' + simpleHash(codeMatch[2]) + '---';
+			// 	this.codeData[uuid] = {file_type: codeType, data: codeMatch[2]};
+			// 	data = data.replace(codeMatch[0], uuid);
+			// }
+
+			// Обработка всех блоков кода за один проход
+			data = data.replace(markdown_pattern, (match, codeType, codeContent) => {
+				const uuid = '---m' + simpleHash(codeContent) + '---';
+				this.codeData[uuid] = { file_type: codeType, data: codeContent.trim() }; // trim() убирает лишние переносы
+				return uuid;
+			});
 
 			if (Object.keys(this.userFiles).length) {
 				const filesData = await this.getFilesContent();
@@ -76,6 +99,8 @@ class ResponseData {
 			}
 
 			this.parsedResponse = data;
+			console.log(this);
+			console.log(this.parsedResponse);
 		}
 	}
 
