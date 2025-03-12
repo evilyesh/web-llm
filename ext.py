@@ -142,9 +142,10 @@ def prepare_send_prompt(data, settings):
 	files_list = data.get('files_list')
 	use_descriptions = data.get('use_descriptions', False)
 	prepare_plan = data.get('prepare_plan', False)
+	prompt_prefix = data.get('prompt_prefix', '')
 
 	retrieved_code = retrieve_send_prompt(data, settings) if use_descriptions else ''
-	analise_task = analise_send_prompt({"prompt": f"{prompt}\n{retrieved_code}", "files_list": files_list}, settings) if prepare_plan else ''
+	analise_task = analise_send_prompt({"prompt": f"{lang.PROMPT_PREFIX}{prompt}\n{lang.PROMPT_PREFIX_PREFIX + prompt_prefix + '\n' if prompt_prefix else ''}\n{retrieved_code}", "files_list": files_list}, settings) if prepare_plan else ''
 
 	files_content = _get_files_content(files_list) if files_list else {}
 	additional_prompt = settings.prefix + ''.join(
@@ -152,7 +153,7 @@ def prepare_send_prompt(data, settings):
 		for file, content in files_content.items()
 	)
 
-	prompt = f"{lang.PROMPT_PREFIX}{prompt}\n{analise_task}\n{additional_prompt}\n{retrieved_code}\n{lang.POSTFIX}"
+	prompt = f"{lang.PROMPT_PREFIX}{prompt}\n{lang.PROMPT_PREFIX_PREFIX + prompt_prefix + '\n' if prompt_prefix else ''}{analise_task + '\n'if analise_task else ''}{additional_prompt + '\n' if additional_prompt else ''}{retrieved_code + '\n' if retrieved_code else ''}\n{lang.POSTFIX}"
 
 	payload = settings.get("payload_init")
 

@@ -134,7 +134,8 @@ class ChatList {
 		this.scrollToMessage(msg.html);
 
 		const promptData = {
-			prompt: `${this.prefixText.value ? this.prefixText.value + '\n\n' : ''}${this.chatMessageInput.value}`,
+			prompt: this.chatMessageInput.value,
+			prompt_prefix: this.prefixText.value ? this.prefixText.value + '\n\n' : '',
 			clear_input: this.clearContext.checked,
 			files_list: this.filesList.userFiles,
 			// include_project_structure: this.includeProjectStructure.checked,

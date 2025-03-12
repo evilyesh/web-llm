@@ -176,7 +176,7 @@ PREFIX = """**Instructions:**
    - Provide the entire content of each edited file.
 
 3. Ensure the output follows the required format:
-   - File path and name must be specified.
+   - File path and name must be specified in format ### /path/to/filename.py.
    - Use `<<<START_FILE>>>` and `<<<END_FILE>>>` labels for file content.
 
 **File List:**
@@ -202,6 +202,10 @@ PREFIX = """**Instructions:**
 
 PROMPT_PREFIX = """
 **Task Description:**
+"""
+
+PROMPT_PREFIX_PREFIX = """
+**Description:**
 """
 
 
